@@ -32,3 +32,17 @@ proc NewGapBuffer*(initialLength: int): RGapBuffer =
 
 # }}}
 
+# Metrics {{{1
+
+proc GapLen*(self: GapBuffer): int {.noSideEffect.} =
+  ## Returns the length of the available gap space, in bytes.
+  assert self.startByte <= self.endByte
+  self.endByte - self.startByte
+
+proc Len*(self: GapBuffer): int {.noSideEffect.} =
+  ## Returns the length of the gap buffer's contents, not including
+  ## available gap space, in bytes.
+  self.buffer.len() - self.GapLen
+
+# }}}
+
