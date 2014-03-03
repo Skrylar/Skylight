@@ -46,3 +46,19 @@ proc Len*(self: GapBuffer): int {.noSideEffect.} =
 
 # }}}
 
+# Redaction {{{1
+
+proc Delback*(self: var GapBuffer) {.noSideEffect.} =
+  if self.startByte > 0:
+    dec(self.startByte) # move back one for sure
+    # now move back more, if we hit unicrap
+    dec(self.startByte, FindSplitLeftUtf8(self.buffer, self.startByte))
+
+proc Delforward*(self: var GapBuffer) {.noSideEffect.} =
+  if self.endByte < self.buffer.len:
+    inc(self.endByte) # move forward one for sure
+    # now move forward more, if we hit unicrap
+    inc(self.endByte, FindSplitRightUtf8(self.buffer, self.endByte))
+
+# }}}
+
