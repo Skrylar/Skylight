@@ -108,5 +108,52 @@ proc AutoGrowBuffer(self: var GapBuffer) =
   # done!
   return
 
+proc CloseGap(self: var GapBuffer) =
+  let eof = self.buffer.len
+  if self.endByte < eof:
+    let tailLen = eof - self.endByte
+    moveMem(addr(self.buffer[self.startByte]),
+      addr(self.buffer[self.endByte]),
+      tailLen)
+    self.endByte   = eof
+    self.startByte = eof - tailLen
+
+proc SetGap(self: var GapBuffer; index: int) =
+  ## Sets the gap position to an arbitrary position, moving data around
+  ## as necessary.
+  assert index >= 0
+  assert index <= self.buffer.len
+  let gapLength = GapLen(self)
+  # where is the new gap?
+  if index < self.startByte:
+    # before the start
+    let prefixLen = self.startByte - index
+    let targetPos = self.endByte   - prefixLen
+    moveMem(addr(self.buffer[targetPos]),
+      addr(self.buffer[index]),
+      prefixLen)
+  else:
+    let prefixLen = index - self.startByte
+    let targetPos = self.endByte + prefixLen
+    moveMem(addr(self.buffer[self.startByte]),
+      addr(self.buffer[self.self.endByte]),
+      prefixLen)
+  # adjust the gap position
+  self.startByte = index
+  self.endByte   = index + gapLength
+
+proc CommitCursor(self: var GapBuffer) =
+  ## Commits moving the gap to accomidate the buffer's cursor.
+  # is the cursor dirty?
+  if self.cursorDirty:
+    # find closest unicode-safe split point
+    let safepoint = FindSplitUtf8(self.buffer, self.cursor)
+    if safepoint != self.buffer.startByte:
+      self.SetGap(safepoint)
+    # cursor is no longer dirty
+    self.cursorDirty = false
+  # done
+  return
+
 # }}}
 
