@@ -136,7 +136,7 @@ proc SetGap(self: var GapBuffer; index: int) =
     let prefixLen = index - self.startByte
     let targetPos = self.endByte + prefixLen
     moveMem(addr(self.buffer[self.startByte]),
-      addr(self.buffer[self.self.endByte]),
+      addr(self.buffer[self.endByte]),
       prefixLen)
   # adjust the gap position
   self.startByte = index
@@ -148,7 +148,7 @@ proc CommitCursor(self: var GapBuffer) =
   if self.cursorDirty:
     # find closest unicode-safe split point
     let safepoint = FindSplitUtf8(self.buffer, self.cursor)
-    if safepoint != self.buffer.startByte:
+    if safepoint != self.startByte:
       self.SetGap(safepoint)
     # cursor is no longer dirty
     self.cursorDirty = false
