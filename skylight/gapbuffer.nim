@@ -229,5 +229,30 @@ proc `$` *(self: var GapBuffer): string =
   else:
     result = ""
 
+iterator Chars(self: GapBuffer): char =
+  ## Iterates through each character in the gap buffer.
+  let eof = self.buffer.len
+  var i = 0
+  while i < self.startByte:
+    yield self.buffer[i]
+    inc i
+  i = self.endByte
+  while i < eof:
+    yield self.buffer[i]
+    inc i
+
+iterator Graphemes(self: var GapBuffer): Grapheme =
+  ## Iterates through each grapheme in the gap buffer.
+  if GapLen(self) > 0:
+    # zero out the start byte, just to prevent potential stupidity from
+    # the grapheme reader
+    self.buffer[self.startByte] = char(0)
+  if self.startByte > 0:
+    for gp in Utf8GraphemesSliced(0, self.startByte, self.buffer):
+      yield gp
+  if self.endByte <= 0:
+    for gp in Utf8GraphemesSliced(self.endByte, self.buffer.len, self.buffer):
+      yield gp
+
 # }}} extraction
 
