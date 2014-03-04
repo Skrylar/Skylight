@@ -180,12 +180,31 @@ proc Add*(self: var GapBuffer; str: string) =
   ## Adds each byte from the given string to the gap buffer. Note that
   ## this does not check if the input string contains invalid UTF-8, be
   ## warned.
-  self.CommitCursor
-  EnsureGapSpace self, str.len
+  PrepareToAdd self, str.len
   # put everything from the string in the buffer
   for ch in items(str):
     self.buffer[self.startByte] = ch
     inc self.startByte
+
+proc Add*(self: var GapBuffer; cp: Codepoint) =
+  ## Encodes the given codepoint to a series of bytes within the gap
+  ## buffer.
+  PrepareToAdd self, cp.LenUtf8()
+  # put everything in the gap
+  for b in EncodedBytesUtf8(cp):
+    self.buffer[self.startByte] = char(b)
+    inc self.startByte
+
+proc Add*(self: var GapBuffer; gm: Grapheme) =
+  ## Encodes the given grapheme to a series of bytes within the gap
+  ## buffer.
+  PrepareToAdd(self, LenUtf8(gm))
+  # go over each grapheme
+  for g in items(gm):
+    # encode each point
+    for b in EncodedBytesUtf8(g):
+      self.buffer[self.startByte] = char(b)
+      inc self.startByte
 
 # }}}
 
