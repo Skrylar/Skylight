@@ -176,5 +176,15 @@ proc Add*(self: var GapBuffer; ch: char) =
   # increment start
   inc self.startByte
 
+proc Add*(self: var GapBuffer; str: string) =
+  ## Adds each byte from the given string to the gap buffer. Note that
+  ## this does not check if the input string contains invalid UTF-8, be
+  ## warned.
+  EnsureGapSpace self, str.len
+  # put everything from the string in the buffer
+  for ch in items(str):
+    self.buffer[self.startByte] = ch
+    inc self.startByte
+
 # }}}
 
