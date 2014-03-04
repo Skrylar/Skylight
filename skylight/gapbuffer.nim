@@ -134,7 +134,6 @@ proc SetGap(self: var GapBuffer; index: int) =
       prefixLen)
   else:
     let prefixLen = index - self.startByte
-    let targetPos = self.endByte + prefixLen
     moveMem(addr(self.buffer[self.startByte]),
       addr(self.buffer[self.endByte]),
       prefixLen)
