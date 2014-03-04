@@ -208,3 +208,26 @@ proc Add*(self: var GapBuffer; gm: Grapheme) =
 
 # }}}
 
+# Extraction {{{1
+
+proc `$` *(self: var GapBuffer): string =
+  ## Extracts the content of the gap buffer in to a new string.
+  let dataLen = self.buffer.len - GapLen(self)
+  if dataLen > 0:
+    let eof = self.buffer.len
+    result  = newString(eof - GapLen(self))
+    var pos = 0
+    if self.startByte > 0:
+      copyMem(addr(result[0]),
+        addr(self.buffer[0]),
+        self.startByte)
+      inc pos, self.startByte
+    if self.endByte < eof:
+      copyMem(addr(result[pos]),
+        addr(self.buffer[self.endByte]),
+        eof - self.endByte)
+  else:
+    result = ""
+
+# }}} extraction
+
