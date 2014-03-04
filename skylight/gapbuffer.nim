@@ -1,6 +1,6 @@
 
 import
-  unicode
+  skutf
 
 # Type definition {{{1
 
