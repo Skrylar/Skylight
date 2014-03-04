@@ -78,3 +78,35 @@ proc SetCursor*(self: var GapBuffer; n: int) {.noSideEffect.} =
 
 # }}}
 
+# Gap management {{{1
+
+proc AutoGrowBuffer(self: var GapBuffer) =
+  ## Grows the length of the buffer, choosing the appropriate buffer
+  ## growth strategy. If other strategies are added to this module, this
+  ## function must select what it believes is the best one and perform
+  ## that.
+  # TODO refactor so we can set a maximum size for buffer growth
+  # check the length after the gap
+  let initialLen  = self.buffer.len
+  let resizedLen  = initialLen * 2
+  let initialTail = initialLen - self.endByte
+  # realloc the buffer
+  self.buffer.setLen(resizedLen)
+  # was there memory?
+  if self.buffer.len < resizedLen:
+    quit "TODO get a proper out of memory exception"
+  # was there any data after the gap?
+  if initialTail > 0:
+    let tailPos    = initialLen - initialTail
+    let newTailPos = resizedLen - initialTail
+    # move the post-gap data to the end of the buffer
+    moveMem(addr(self.buffer[newTailPos]),
+      addr(self.buffer[tailPos]),
+      initialTail)
+  # update the "end" of the gap
+  self.endByte = resizedLen - initialTail
+  # done!
+  return
+
+# }}}
+
