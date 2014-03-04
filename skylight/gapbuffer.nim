@@ -158,19 +158,19 @@ proc CommitCursor(self: var GapBuffer) =
 
 # Appending content {{{1
 
-template EnsureGapSpace(self: expr; space: int) =
-  if GapLen(self) < 1:
+template PrepareToAdd(self, space: expr): stmt =
+  self.CommitCursor
+  if GapLen(self) < space:
     AutoGrowBuffer(self)
 
 proc Add*(self: var GapBuffer; ch: char) =
   ## Adds a 7-bit character to the gap buffer. Note that this is for
   ## adding ANSI characters, *not* arbitrary binary data!
-  self.CommitCursor
   # Ensure user obedience.
   assert ch >= char(0)
   assert ch <= char(127)
   # is the gap length >= input?
-  EnsureGapSpace self, 1
+  PrepareToAdd self, 1
   # insert bytes at start
   self.buffer[self.startByte] = ch
   # increment start
