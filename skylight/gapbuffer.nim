@@ -166,6 +166,7 @@ template EnsureGapSpace(self: expr; space: int) =
 proc Add*(self: var GapBuffer; ch: char) =
   ## Adds a 7-bit character to the gap buffer. Note that this is for
   ## adding ANSI characters, *not* arbitrary binary data!
+  self.CommitCursor
   # Ensure user obedience.
   assert ch >= char(0)
   assert ch <= char(127)
@@ -180,6 +181,7 @@ proc Add*(self: var GapBuffer; str: string) =
   ## Adds each byte from the given string to the gap buffer. Note that
   ## this does not check if the input string contains invalid UTF-8, be
   ## warned.
+  self.CommitCursor
   EnsureGapSpace self, str.len
   # put everything from the string in the buffer
   for ch in items(str):
