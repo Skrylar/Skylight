@@ -256,3 +256,35 @@ iterator Graphemes(self: var GapBuffer): Grapheme =
 
 # }}} extraction
 
+# Unit testing {{{1
+
+when isMainModule:
+  import unittest
+  test "basic usage":
+    var buffer: GapBuffer
+    checkpoint "initialize"
+    InitGapBuffer(buffer, 32)
+    # put stuff in here
+    checkpoint "first append"
+    buffer.Add "snort"
+    buffer.Add ' '
+    buffer.Add "bacon"
+    # check it
+    check($buffer == "snort bacon")
+    # lets prepend some stuff
+    checkpoint "prepend"
+    buffer.SetCursor(0)
+    buffer.Add "don't "
+    # check it
+    check($buffer == "don't snort bacon")
+    # okay now lets mangle other stuff
+    checkpoint "middle insertion"
+    buffer.SetCursor(12)
+    buffer.Add "old "
+    # check it
+    check($buffer == "don't snort old bacon")
+  # TODO do some tests with unicrap and make sure it won't mangle stuff
+  # TODO do some tests with iterators to make sure sadness doesn't happen
+
+# }}}
+
