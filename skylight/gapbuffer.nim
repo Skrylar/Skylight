@@ -62,3 +62,19 @@ proc Delforward*(self: var GapBuffer) {.noSideEffect.} =
 
 # }}}
 
+# Lazy Cursor {{{1
+
+proc SetCursor*(self: var GapBuffer; n: int) {.noSideEffect.} =
+  ## Sets the position of the editing cursor within the gap buffer.
+  if n != self.startByte:
+    # TODO i haven't decided how to handle setting the cursor all the
+    # way to the right somewhere
+    assert n <= self.endByte
+    if n < 0:
+      self.cursor = 0
+    else:
+      self.cursor = n
+      self.cursorDirty = true
+
+# }}}
+
