@@ -1,6 +1,6 @@
 
 import
-  skutf
+  skunicode
 
 # Type definition {{{1
 
