@@ -46,22 +46,6 @@ proc Len*(self: GapBuffer): int {.noSideEffect.} =
 
 # }}}
 
-# Redaction {{{1
-
-proc Delback*(self: var GapBuffer) {.noSideEffect.} =
-  if self.startByte > 0:
-    dec(self.startByte) # move back one for sure
-    # now move back more, if we hit unicrap
-    dec(self.startByte, FindSplitLeftUtf8(self.buffer, self.startByte))
-
-proc Delforward*(self: var GapBuffer) {.noSideEffect.} =
-  if self.endByte < self.buffer.len:
-    inc(self.endByte) # move forward one for sure
-    # now move forward more, if we hit unicrap
-    inc(self.endByte, FindSplitRightUtf8(self.buffer, self.endByte))
-
-# }}}
-
 # Lazy Cursor {{{1
 
 proc SetCursor*(self: var GapBuffer; n: int) {.noSideEffect.} =
@@ -146,7 +130,7 @@ proc CommitCursor(self: var GapBuffer) =
   # is the cursor dirty?
   if self.cursorDirty:
     # find closest unicode-safe split point
-    let safepoint = FindSplitUtf8(self.buffer, self.cursor)
+    let safepoint = self.cursor + FindSplitUtf8(self.buffer, self.cursor)
     if safepoint != self.startByte:
       self.SetGap(safepoint)
     # cursor is no longer dirty
@@ -205,6 +189,24 @@ proc Add*(self: var GapBuffer; gm: Grapheme) =
     for b in EncodedBytesUtf8(g):
       self.buffer[self.startByte] = char(b)
       inc self.startByte
+
+# }}}
+
+# Redaction {{{1
+
+proc Delback*(self: var GapBuffer) =
+  self.CommitCursor
+  if self.startByte > 0:
+    dec(self.startByte) # move back one for sure
+    # now move back more, if we hit unicrap
+    dec(self.startByte, FindSplitLeftUtf8(self.buffer, self.startByte))
+
+proc Delforward*(self: var GapBuffer) =
+  self.CommitCursor
+  if self.endByte < self.buffer.len:
+    # now move forward more, if we hit unicrap
+    inc(self.endByte, FindSplitRightUtf8(self.buffer, self.endByte))
+    inc(self.endByte) # move forward one for sure
 
 # }}}
 
@@ -283,6 +285,23 @@ when isMainModule:
     buffer.Add "old "
     # check it
     check($buffer == "don't snort old bacon")
+
+  test "redaction":
+    var buffer: GapBuffer
+    InitGapBuffer(buffer, 32)
+    buffer.Add "don't snort old bacon"
+    check($buffer == "don't snort old bacon")
+    # delete stuff
+    buffer.SetCursor(4)
+    buffer.Delback
+    # check it
+    check($buffer == "dont snort old bacon")
+    # delete more stuff
+    buffer.Delback
+    buffer.Delforward
+    # check it
+    check($buffer == "do snort old bacon")
+
   # TODO do some tests with unicrap and make sure it won't mangle stuff
   # TODO do some tests with iterators to make sure sadness doesn't happen
 
