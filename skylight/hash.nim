@@ -38,5 +38,21 @@ method Add*[T](self: var HashAlgorithm[T];
     let actualStop = if stop < 0: data.len else: stop
     return self.Add(addr(data[start]), actualStop - start)
 
+template DefAdd(typ: typedesc): stmt =
+  method Add*[T](self: var HashAlgorithm[T];
+    data: typ): bool {.inline.} =
+      return self.Add(addr(data), sizeof(typ))
+
+DefAdd(int)
+DefAdd(int8)
+DefAdd(int16)
+DefAdd(int32)
+DefAdd(int64)
+DefAdd(uint)
+DefAdd(uint8)
+DefAdd(uint16)
+DefAdd(uint32)
+DefAdd(uint64)
+
 # }}}
 
