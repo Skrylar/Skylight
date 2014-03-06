@@ -9,14 +9,14 @@ type
 
 # Hash management {{{1
 
-method Reset*(self: var HashAlgorithm): bool =
+method Reset*[T](self: var HashAlgorithm[T]): bool =
   ## Ask a hash algorithm to reset itself, clearing state back to
   ## whatever is needed to hash a clean set of data. Returns true if the
   ## hash algorithm is reset and can be used again, false if the hash
   ## algorithm has broken and should be considered unusable.
   return false
 
-method Finalize*(self: var HashAlgorithm): bool =
+method Finalize*[T](self: var HashAlgorithm[T]): bool =
   ## Inform a hash algorithm that no more data is required and any
   ## remaining steps to produce the completed hash should be performed
   ## now.
@@ -26,11 +26,11 @@ method Finalize*(self: var HashAlgorithm): bool =
 
 # Adding data {{{1
 
-method Add*(self: var HashAlgorithm;
+method Add*[T](self: var HashAlgorithm[T];
   data: Pointer; length: int): bool =
     return false
 
-method Add*(self: var HashAlgorithm;
+method Add*[T](self: var HashAlgorithm[T];
   data: string; start: int = 0; stop: int = -1): bool =
     ## Adds the given string to the hash result, with an optional start
     ## and stop slice.
