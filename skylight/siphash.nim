@@ -122,16 +122,10 @@ proc crypto_auth(
       v0 = v0 xor m
       inc(pos, 8)
 
-    # TODO Unroll this manually
-    # switch( left ):
-    #   case 7: b |= ( ( u64 )sof[6] )  << 48
-    #   case 6: b |= ( ( u64 )sof[5] )  << 40
-    #   case 5: b |= ( ( u64 )sof[4] )  << 32
-    #   case 4: b |= ( ( u64 )sof[3] )  << 24
-    #   case 3: b |= ( ( u64 )sof[2] )  << 16
-    #   case 2: b |= ( ( u64 )sof[1] )  <<  8
-    #   case 1: b |= ( ( u64 )sof[0] ); break
-    #   case 0: break
+    # NB: I would prefer this be unrolled.
+    while left > 0:
+      let x = left - 1
+      b = b or uint64( uint64(sof[x]) shl uint64(x * 8) )
 
     # Debug printing omitted.
 
