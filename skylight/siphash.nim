@@ -1,10 +1,38 @@
 
-import hashbase
+import
+  hash,
+  unsigned
 
 # Type definition {{{1
 
 type 
   SipHash24Algorithm* = object {.final.} of HashAlgorithm[uint64]
+
+assert sizeof(int64) >= sizeof(pointer)
+
+# }}}
+
+# Pointer arithmetic {{{1
+# NB: This should probably get sporked in a separate unit which has
+# warnings not to use it irresponsibly.
+
+proc `[]` (self: pointer; index: int): uint8 {.inline.} =
+  return (cast[ptr array[0..65535, uint8]](self))[index]
+
+proc `[]=` (self: pointer; index: int; replacement: uint8) {.inline.} =
+  (cast[ptr array[0..65535, uint8]](self))[index] = replacement
+
+proc `+` (self: pointer; other: int): pointer {.inline.} =
+  return cast[pointer](cast[int64](self) + other)
+
+proc `-` (self: pointer; other: int): pointer {.inline.} =
+  return cast[pointer](cast[int64](self) - other)
+
+proc Inc(self: var pointer; amount: int) {.inline.} =
+  self = cast[pointer](cast[int64](self)) + amount
+
+proc Dec(self: var pointer; amount: int) {.inline.} =
+  self = cast[pointer](cast[int64](self)) - amount
 
 # }}}
 
@@ -16,8 +44,8 @@ type
 # NB: We should look in to compiler-specific optimizations, as some have
 # special ways of doing a ROTL call.
 
-template Rotl(x, b: uint64): stmt =
-  ( (x shl b) or ( x shr (64 - b) ) )
+proc ROTL(x, b: uint64): uint64 {.inline.} =
+  return ( (x shl b) or ( x shr (uint64(64) - b) ) )
 
 # }}}
 
@@ -25,20 +53,20 @@ template Rotl(x, b: uint64): stmt =
 # NB: This code can probably be moved to a separate module because its
 # also useful for non-crypto encoders as well.
 
-template U32To8LE(p: pointer; v: uint32): stmt =
+proc U32To8LE(p: pointer; v: uint32) {.inline.} =
   p[0] = uint8(v       )
   p[1] = uint8(v shr 8 )
   p[2] = uint8(v shr 16)
   p[3] = uint8(v shr 24)
 
-template U64To8LE(p: pointer; v: uint64): stmt =
+proc U64To8LE(p: pointer; v: uint64) {.inline.} =
   U32To8LE(p    , uint32(v       ))
   U32To8LE(p + 4, uint32(v shr 32))
 
-template U8To64LE(p: pointer): uint64 =
+proc U8To64LE(p: pointer): uint64 {.inline.} =
   return
-    uint64(p[0])  or
-    (uint64(p[1]) shl  8) or
+    uint64(p[0]) or
+    (uint64(p[1]) shl 8) or
     (uint64(p[2]) shl 16) or
     (uint64(p[3]) shl 24) or
     (uint64(p[4]) shl 32) or
@@ -59,8 +87,9 @@ template Sipround(v0, v1, v2, v3: expr): stmt =
 # SipHash-2-4
 proc crypto_auth(
   output, sof: pointer;
-  inlen: uint64;
+  inlen: int;
   k: pointer ): int =
+    assert inlen >= 0
 
     # "somepseudorandomlygeneratedbytes"
     var v0 : uint64 = uint64(0x736F6D6570736575)
@@ -72,8 +101,10 @@ proc crypto_auth(
     var k1 : uint64 = U8To64LE(k + 8)
     var m  : uint64
 
-    let eof: pointer = sof + inlen - ( inlen mod sizeof(uint64) )
+    let eof: pointer = sof + ( inlen - ( inlen mod sizeof(uint64) ) )
     let left = cint(inlen and 7)
+
+    var pos = sof
 
     b = uint64(inlen) shl 56
 
@@ -82,18 +113,14 @@ proc crypto_auth(
     v1 = v1 xor k1
     v0 = v0 xor k0
 
-    while sof < eof:
+    while pos < eof:
       m = U8To64LE(sof)
-      # printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 )
-      # printf( "(%3d) v1 %08x %08x\n", ( int )inlen, ( u32 )( v1 >> 32 ), ( u32 )v1 )
-      # printf( "(%3d) v2 %08x %08x\n", ( int )inlen, ( u32 )( v2 >> 32 ), ( u32 )v2 )
-      # printf( "(%3d) v3 %08x %08x\n", ( int )inlen, ( u32 )( v3 >> 32 ), ( u32 )v3 )
-      # printf( "(%3d) compress %08x %08x\n", ( int )inlen, ( u32 )( m >> 32 ), ( u32 )m )
+      # Debug printing omitted.
       v3 = v3 xor m
       Sipround(v0, v1, v2, v3)
       Sipround(v0, v1, v2, v3)
       v0 = v0 xor m
-      inc(sof, 8)
+      inc(pos, 8)
 
     # TODO Unroll this manually
     # switch( left ):
@@ -106,21 +133,14 @@ proc crypto_auth(
     #   case 1: b |= ( ( u64 )sof[0] ); break
     #   case 0: break
 
-    # printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 )
-    # printf( "(%3d) v1 %08x %08x\n", ( int )inlen, ( u32 )( v1 >> 32 ), ( u32 )v1 )
-    # printf( "(%3d) v2 %08x %08x\n", ( int )inlen, ( u32 )( v2 >> 32 ), ( u32 )v2 )
-    # printf( "(%3d) v3 %08x %08x\n", ( int )inlen, ( u32 )( v3 >> 32 ), ( u32 )v3 )
-    # printf( "(%3d) padding   %08x %08x\n", ( int )inlen, ( u32 )( b >> 32 ), ( u32 )b )
- 
+    # Debug printing omitted.
+
     v3 = v3 xor b
     Sipround(v0, v1, v2, v3)
     Sipround(v0, v1, v2, v3)
     v0 = v0 xor b
 
-    # printf( "(%3d) v0 %08x %08x\n", ( int )inlen, ( u32 )( v0 >> 32 ), ( u32 )v0 )
-    # printf( "(%3d) v1 %08x %08x\n", ( int )inlen, ( u32 )( v1 >> 32 ), ( u32 )v1 )
-    # printf( "(%3d) v2 %08x %08x\n", ( int )inlen, ( u32 )( v2 >> 32 ), ( u32 )v2 )
-    # printf( "(%3d) v3 %08x %08x\n", ( int )inlen, ( u32 )( v3 >> 32 ), ( u32 )v3 )
+    # Debug printing omitted.
 
     v2 = v2 xor 0xFF
     Sipround(v0, v1, v2, v3)
