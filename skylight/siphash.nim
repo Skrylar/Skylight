@@ -44,8 +44,8 @@ proc Dec(self: var pointer; amount: int) {.inline.} =
 # NB: We should look in to compiler-specific optimizations, as some have
 # special ways of doing a ROTL call.
 
-proc ROTL(x, b: uint64): uint64 {.inline.} =
-  return ( (x shl b) or ( x shr (uint64(64) - b) ) )
+template ROTL(x, b: uint64): uint64 =
+  ( (x shl b) or ( x shr (uint64(64) - b) ) )
 
 # }}}
 
@@ -78,7 +78,7 @@ proc U8To64LE(p: pointer): uint64 {.inline.} =
 
 # Siphash Implementation {{{1
 
-template Sipround(v0, v1, v2, v3: expr): stmt =
+proc Sipround(v0, v1, v2, v3: var uint64) {.inline.} =
   v0 = v0 + v1; v1 = ROTL(v1, 13); v1 = v1 xor v0; v0 = ROTL(v0, 32)
   v2 = v2 + v3; v3 = ROTL(v3, 16); v3 = v3 xor v2
   v0 = v0 + v3; v3 = ROTL(v3, 21); v3 = v3 xor v0
@@ -98,7 +98,7 @@ proc crypto_auth(
     var v3 : uint64 = uint64(0x7465646279746573)
     var b  : uint64
     var k0 : uint64 = U8To64LE(pointer(addr(k[0])))
-    var k1 : uint64 = U8To64LE(pointer(addr(k[7])))
+    var k1 : uint64 = U8To64LE(pointer(addr(k[8])))
     var m  : uint64
 
     let eof: pointer = sof + ( inlen - ( inlen mod sizeof(uint64) ) )
@@ -114,7 +114,7 @@ proc crypto_auth(
     v0 = v0 xor k0
 
     while pos < eof:
-      m = U8To64LE(sof)
+      m = U8To64LE(pos)
       # Debug printing omitted.
       v3 = v3 xor m
       Sipround(v0, v1, v2, v3)
@@ -125,7 +125,7 @@ proc crypto_auth(
     # NB: I would prefer this be unrolled.
     while left > 0:
       let x = left - 1
-      b = b or uint64( uint64(sof[x]) shl uint64(x * 8) )
+      b = b or uint64( uint64(pos[x]) shl uint64(x * 8) )
       dec(left)
 
     # Debug printing omitted.
@@ -237,8 +237,9 @@ when isMainModule:
     for i in 0..63:
       input[i] = uint8(i)
       discard crypto_auth(pointer(addr(output[0])), pointer(addr(input[0])), i, k)
-      var derp = ExpectedResults[i]
-      check equalMem(addr(derp[0]), addr(output[0]), 8)
+      var expected = ExpectedResults[i]
+      for i in 0..7:
+        check output[i] == uint8(expected[i])
 
 # }}}
 
