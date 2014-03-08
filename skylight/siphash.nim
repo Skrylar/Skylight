@@ -19,32 +19,6 @@ type
 
 # }}}
 
-# Pointer arithmetic {{{1
-# NB: This should probably get sporked in a separate unit which has
-# warnings not to use it irresponsibly.
-
-assert sizeof(int64) >= sizeof(pointer)
-
-proc `[]` (self: pointer; index: int): uint8 {.inline.} =
-  return (cast[ptr array[0..65535, uint8]](self))[index]
-
-proc `[]=` (self: pointer; index: int; replacement: uint8) {.inline.} =
-  (cast[ptr array[0..65535, uint8]](self))[index] = replacement
-
-proc `+` (self: pointer; other: int): pointer {.inline.} =
-  return cast[pointer](cast[int64](self) + other)
-
-proc `-` (self: pointer; other: int): pointer {.inline.} =
-  return cast[pointer](cast[int64](self) - other)
-
-proc Inc(self: var pointer; amount: int) {.inline.} =
-  self = cast[pointer](cast[int64](self)) + amount
-
-proc Dec(self: var pointer; amount: int) {.inline.} =
-  self = cast[pointer](cast[int64](self)) - amount
-
-# }}}
-
 # ROTL {{{1
 
 # NB: Maybe we could spork this to a separate unit, since its used in a
