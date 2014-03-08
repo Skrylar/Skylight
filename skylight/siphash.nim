@@ -1,20 +1,29 @@
 
+# Ported from: https://131002.net/siphash/ by Joshua "Skrylar" Cearley.
+#
+# This file (siphash.nim) is released in to the public domain (CC0
+# License), the author releases all claims of copyright on it.
+
 import
   hash,
   unsigned
 
-# Type definition {{{1
+# Crypto-code is decidedly performance critical.
+{.push checks: off.}
 
-type 
-  SipHash24Algorithm* = object {.final.} of HashAlgorithm[uint64]
+# Type definitions {{{1
 
-assert sizeof(int64) >= sizeof(pointer)
+type
+  SipHash24Key* = array[0..15, uint8]
+  RawData = ptr array[0..65535, uint8]
 
 # }}}
 
 # Pointer arithmetic {{{1
 # NB: This should probably get sporked in a separate unit which has
 # warnings not to use it irresponsibly.
+
+assert sizeof(int64) >= sizeof(pointer)
 
 proc `[]` (self: pointer; index: int): uint8 {.inline.} =
   return (cast[ptr array[0..65535, uint8]](self))[index]
@@ -53,99 +62,96 @@ template ROTL(x, b: uint64): uint64 =
 # NB: This code can probably be moved to a separate module because its
 # also useful for non-crypto encoders as well.
 
-proc U32To8LE(p: pointer; v: uint32) {.inline.} =
-  p[0] = uint8(v       )
-  p[1] = uint8(v shr 8 )
-  p[2] = uint8(v shr 16)
-  p[3] = uint8(v shr 24)
+template U32To8LE[T](p: var T; v: uint32; offset: int = 0) =
+  p[0+offset] = uint8(v       )
+  p[1+offset] = uint8(v shr 8 )
+  p[2+offset] = uint8(v shr 16)
+  p[3+offset] = uint8(v shr 24)
 
-proc U64To8LE(p: pointer; v: uint64) {.inline.} =
-  U32To8LE(p    , uint32(v       ))
-  U32To8LE(p + 4, uint32(v shr 32))
+template U64To8LE[T](p: var T; v: uint64; offset: int = 0) =
+  U32To8LE(p, uint32(v       ), 0)
+  U32To8LE(p, uint32(v shr 32), 4)
 
-proc U8To64LE(p: pointer): uint64 {.inline.} =
-  return
-    uint64(p[0]) or
-    (uint64(p[1]) shl 8) or
-    (uint64(p[2]) shl 16) or
-    (uint64(p[3]) shl 24) or
-    (uint64(p[4]) shl 32) or
-    (uint64(p[5]) shl 40) or
-    (uint64(p[6]) shl 48) or
-    (uint64(p[7]) shl 56)
+template U8To64LE[T](p: T; offset: int = 0): uint64 =
+  uint64(p[0+offset]) or
+    (uint64(p[1+offset]) shl 8) or
+    (uint64(p[2+offset]) shl 16) or
+    (uint64(p[3+offset]) shl 24) or
+    (uint64(p[4+offset]) shl 32) or
+    (uint64(p[5+offset]) shl 40) or
+    (uint64(p[6+offset]) shl 48) or
+    (uint64(p[7+offset]) shl 56)
 
 # }}}
 
 # Siphash Implementation {{{1
 
-proc Sipround(v0, v1, v2, v3: var uint64) {.inline.} =
+template Sipround(v0, v1, v2, v3: var uint64) =
   v0 = v0 + v1; v1 = ROTL(v1, 13); v1 = v1 xor v0; v0 = ROTL(v0, 32)
   v2 = v2 + v3; v3 = ROTL(v3, 16); v3 = v3 xor v2
   v0 = v0 + v3; v3 = ROTL(v3, 21); v3 = v3 xor v0
   v2 = v2 + v1; v1 = ROTL(v1, 17); v1 = v1 xor v2; v2 = ROTL(v2, 32)
 
 # SipHash-2-4
-proc crypto_auth(
-  output, sof: pointer;
-  inlen: int;
-  k: var array[0..15, uint8] ): int =
-    assert inlen >= 0
+proc SipHash24*(input: pointer; length: int; k: SipHash24Key): uint64 =
+  assert input != nil
+  assert length >= 0
 
-    # "somepseudorandomlygeneratedbytes"
-    var v0 : uint64 = uint64(0x736F6D6570736575)
-    var v1 : uint64 = uint64(0x646F72616E646F6D)
-    var v2 : uint64 = uint64(0x6C7967656E657261)
-    var v3 : uint64 = uint64(0x7465646279746573)
-    var b  : uint64
-    var k0 : uint64 = U8To64LE(pointer(addr(k[0])))
-    var k1 : uint64 = U8To64LE(pointer(addr(k[8])))
-    var m  : uint64
+  # "somepseudorandomlygeneratedbytes"
+  var v0 : uint64 = uint64(0x736F6D6570736575)
+  var v1 : uint64 = uint64(0x646F72616E646F6D)
+  var v2 : uint64 = uint64(0x6C7967656E657261)
+  var v3 : uint64 = uint64(0x7465646279746573)
+  var b  : uint64
+  var k0 : uint64 = U8To64LE(k, 0)
+  var k1 : uint64 = U8To64LE(k, 8)
+  var m  : uint64
 
-    let eof: pointer = sof + ( inlen - ( inlen mod sizeof(uint64) ) )
-    var left = cint(inlen and 7)
+  let eof = ( length - ( length mod sizeof(uint64) ) )
+  var left = cint(length and 7)
+  var pos = 0
 
-    var pos = sof
+  let actualInput = cast[RawData](input)
 
-    b = uint64(inlen) shl 56
+  b = uint64(length) shl 56
 
-    v3 = v3 xor k1
-    v2 = v2 xor k0
-    v1 = v1 xor k1
-    v0 = v0 xor k0
+  v3 = v3 xor k1
+  v2 = v2 xor k0
+  v1 = v1 xor k1
+  v0 = v0 xor k0
 
-    while pos < eof:
-      m = U8To64LE(pos)
-      # Debug printing omitted.
-      v3 = v3 xor m
-      Sipround(v0, v1, v2, v3)
-      Sipround(v0, v1, v2, v3)
-      v0 = v0 xor m
-      inc(pos, 8)
-
-    # NB: I would prefer this be unrolled.
-    while left > 0:
-      let x = left - 1
-      b = b or uint64( uint64(pos[x]) shl uint64(x * 8) )
-      dec(left)
-
+  while pos < eof:
+    m = U8To64LE(actualInput, pos)
     # Debug printing omitted.
+    v3 = v3 xor m
+    Sipround(v0, v1, v2, v3)
+    Sipround(v0, v1, v2, v3)
+    v0 = v0 xor m
+    inc(pos, 8)
 
-    v3 = v3 xor b
-    Sipround(v0, v1, v2, v3)
-    Sipround(v0, v1, v2, v3)
-    v0 = v0 xor b
+  # NB: I would prefer this be unrolled.
+  while left > 0:
+    let x = left - 1
+    b = b or uint64( uint64(actualInput[pos+x]) shl uint64(x * 8) )
+    dec(left)
 
-    # Debug printing omitted.
+  # Debug printing omitted.
 
-    v2 = v2 xor 0xFF
-    Sipround(v0, v1, v2, v3)
-    Sipround(v0, v1, v2, v3)
-    Sipround(v0, v1, v2, v3)
-    Sipround(v0, v1, v2, v3)
-    b = v0 xor v1 xor v2 xor v3
-    U64To8LE(output, b)
+  v3 = v3 xor b
+  Sipround(v0, v1, v2, v3)
+  Sipround(v0, v1, v2, v3)
+  v0 = v0 xor b
 
-    return 0
+  # Debug printing omitted.
+
+  v2 = v2 xor 0xFF
+  Sipround(v0, v1, v2, v3)
+  Sipround(v0, v1, v2, v3)
+  Sipround(v0, v1, v2, v3)
+  Sipround(v0, v1, v2, v3)
+  b = v0 xor v1 xor v2 xor v3
+
+  return b
 
 # }}}
 
@@ -225,7 +231,7 @@ when isMainModule:
   ]
 
   test "siphash vectors":
-    var k: array[0..15, uint8]
+    var k: SipHash24Key
     var input: array[0..64, uint8]
     var output: array[0..7, uint8]
 
@@ -236,10 +242,11 @@ when isMainModule:
     # do the things
     for i in 0..63:
       input[i] = uint8(i)
-      discard crypto_auth(pointer(addr(output[0])), pointer(addr(input[0])), i, k)
-      var expected = ExpectedResults[i]
-      for i in 0..7:
-        check output[i] == uint8(expected[i])
+      let hash = SipHash24(pointer(addr(input[0])), i, k)
+      let expected = U8To64LE(ExpectedResults[i])
+      check hash == expected
 
 # }}}
+
+{.pop.}
 
