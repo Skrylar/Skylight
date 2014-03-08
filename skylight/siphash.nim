@@ -129,6 +129,43 @@ proc SipHash24*(input: pointer; length: int; k: SipHash24Key): uint64 =
 
 # }}}
 
+# User Helpers {{{1
+
+proc SipHash24*(input: pointer; length: int): uint64 =
+  let key: SipHash24Key = [uint8(0), uint8(1), uint8(2), uint8(3),
+    uint8(4), uint8(5), uint8(6), uint8(7), uint8(8), uint8(9), uint8(10),
+    uint8(11), uint8(12), uint8(13), uint8(14), uint8(15)]
+  return SipHash24(input, length, key)
+
+proc SipHash24*(input: string): uint64 {.inline.} =
+  var data = input
+  return SipHash24(addr(data[0]), data.len)
+
+proc SipHash24*(input: string; key: SipHash24Key): uint64 {.inline.} =
+  var data = input
+  return SipHash24(addr(data[0]), data.len, key)
+
+template DefHash(typ: typedesc): stmt =
+  proc SipHash24*(input: typ): uint64 =
+    var data = input
+    return SipHash24(addr(data), sizeof(typ))
+  proc SipHash24*(input: typ; key: SipHash24Key): uint64 =
+    var data = input
+    return SipHash24(addr(data), sizeof(typ), key)
+
+DefHash(int)
+DefHash(int8)
+DefHash(int16)
+DefHash(int32)
+DefHash(int64)
+DefHash(uint)
+DefHash(uint8)
+DefHash(uint16)
+DefHash(uint32)
+DefHash(uint64)
+
+# }}}
+
 # Test vectors {{{1
 
 when isMainModule:
