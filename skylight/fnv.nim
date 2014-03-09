@@ -1,4 +1,10 @@
 
+# Ported from: http://www.isthe.com/chongo/tech/comp/fnv/ by Joshua
+# "Skrylar" Cearley.
+#
+# This file (fnv.nim) is released in to the public domain (CC0 License),
+# the author releases all claims of copyright on it.
+
 import
   unsigned
 
