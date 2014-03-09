@@ -67,15 +67,17 @@ const
 {.push checks: off.}
 
 proc Fnv1Hash32*(input: pointer; length: int): uint32 =
+  assert length >= 0
   let actualInput = cast[RawData](input)
   result = FnvOffset32
-  for i in 0..length:
+  for i in 0..(length-1):
     result = (result * FnvPrime32) xor actualInput[i]
 
 proc Fnv1aHash32*(input: pointer; length: int): uint32 =
+  assert length >= 0
   let actualInput = cast[RawData](input)
   result = FnvOffset32
-  for i in 0..length:
+  for i in 0..(length-1):
     result = (result xor actualInput[i]) * FnvPrime32
 
 {.pop.}
