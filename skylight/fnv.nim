@@ -16,7 +16,7 @@ const
   FnvPrime32 = 16777619'u32
 
   # 64 bit FNV_prime = 240 + 28 + 0xb3 = 1099511628211
-  # FnvPrime64 = 1099511628211'u64
+  FnvPrime64 = 1099511628211'u64
 
   # 128 bit FNV_prime = 288 + 28 + 0x3b = 30948500982134506872
   # 4781371
@@ -38,6 +38,7 @@ const
   FnvOffset32 = 2166136261'u32
 
   # 64 bit offset_basis = 14695981039346656037
+  FnvOffset64 = 0x14650FB0739D0383'u64
 
   # 128 bit offset_basis = 14406626329776981559649562966706236
   # 7629
@@ -80,6 +81,26 @@ proc Fnv1aHash32(input: pointer; length: int): uint32 =
 {.pop.}
 
 # }}} 32-bit
+
+# 64-bit implementation {{{2
+
+{.push checks: off.}
+
+proc Fnv1Hash64(input: pointer; length: int): uint64 =
+  let actualInput = cast[RawData](input)
+  result = FnvOffset64
+  for i in 0..length:
+    result = (result * FnvPrime64) xor actualInput[i]
+
+proc Fnv1aHash64(input: pointer; length: int): uint64 =
+  let actualInput = cast[RawData](input)
+  result = FnvOffset64
+  for i in 0..length:
+    result = (result xor actualInput[i]) * FnvPrime64
+
+{.pop.}
+
+# }}} 64-bit
 
 # }}} one-shots
 
