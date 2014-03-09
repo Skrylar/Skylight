@@ -66,13 +66,13 @@ const
 
 {.push checks: off.}
 
-proc Fnv1Hash32(input: pointer; length: int): uint32 =
+proc Fnv1Hash32*(input: pointer; length: int): uint32 =
   let actualInput = cast[RawData](input)
   result = FnvOffset32
   for i in 0..length:
     result = (result * FnvPrime32) xor actualInput[i]
 
-proc Fnv1aHash32(input: pointer; length: int): uint32 =
+proc Fnv1aHash32*(input: pointer; length: int): uint32 =
   let actualInput = cast[RawData](input)
   result = FnvOffset32
   for i in 0..length:
@@ -86,13 +86,13 @@ proc Fnv1aHash32(input: pointer; length: int): uint32 =
 
 {.push checks: off.}
 
-proc Fnv1Hash64(input: pointer; length: int): uint64 =
+proc Fnv1Hash64*(input: pointer; length: int): uint64 =
   let actualInput = cast[RawData](input)
   result = FnvOffset64
   for i in 0..length:
     result = (result * FnvPrime64) xor actualInput[i]
 
-proc Fnv1aHash64(input: pointer; length: int): uint64 =
+proc Fnv1aHash64*(input: pointer; length: int): uint64 =
   let actualInput = cast[RawData](input)
   result = FnvOffset64
   for i in 0..length:
@@ -104,9 +104,52 @@ proc Fnv1aHash64(input: pointer; length: int): uint64 =
 
 # }}} one-shots
 
+# User Helpers {{{1
+
+proc Fnv1Hash32(input: string): uint32 =
+  var data = input
+  return Fnv1Hash32(addr(data[0]), data.len)
+
+proc Fnv1aHash32(input: string): uint32 =
+  var data = input
+  return Fnv1aHash32(addr(data[0]), data.len)
+
+proc Fnv1Hash64(input: string): uint64 =
+  var data = input
+  return Fnv1Hash64(addr(data[0]), data.len)
+
+proc Fnv1aHash64(input: string): uint64 =
+  var data = input
+  return Fnv1aHash64(addr(data[0]), data.len)
+
+template DefHash(typ: typedesc): stmt =
+  proc Fnv1Hash32*(input: typ): uint64 =
+    var data = input
+    return Fnv1Hash32(addr(data), sizeof(typ))
+  proc Fnv1aHash32*(input: typ): uint64 =
+    var data = input
+    return Fnv1aHash32(addr(data), sizeof(typ))
+  proc Fnv1Hash64*(input: typ): uint64 =
+    var data = input
+    return Fnv1Hash64(addr(data), sizeof(typ))
+  proc Fnv1aHash64*(input: typ): uint64 =
+    var data = input
+    return Fnv1aHash64(addr(data), sizeof(typ))
+
+DefHash(int)
+DefHash(int8)
+DefHash(int16)
+DefHash(int32)
+DefHash(int64)
+DefHash(uint)
+DefHash(uint8)
+DefHash(uint16)
+DefHash(uint32)
+DefHash(uint64)
+
+# }}}
+
 # Unit testing {{{1
-
-
-
+# TODO
 # }}}
 
