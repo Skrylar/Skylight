@@ -38,7 +38,7 @@ const
   FnvOffset32 = 2166136261'u32
 
   # 64 bit offset_basis = 14695981039346656037
-  FnvOffset64 = 0x14650FB0739D0383'u64
+  FnvOffset64 = 0xCBF29CE484222325'u64
 
   # 128 bit offset_basis = 14406626329776981559649562966706236
   # 7629
@@ -89,15 +89,17 @@ proc Fnv1aHash32*(input: pointer; length: int): uint32 =
 {.push checks: off.}
 
 proc Fnv1Hash64*(input: pointer; length: int): uint64 =
+  assert length >= 0
   let actualInput = cast[RawData](input)
   result = FnvOffset64
-  for i in 0..length:
+  for i in 0..(length-1):
     result = (result * FnvPrime64) xor actualInput[i]
 
 proc Fnv1aHash64*(input: pointer; length: int): uint64 =
+  assert length >= 0
   let actualInput = cast[RawData](input)
   result = FnvOffset64
-  for i in 0..length:
+  for i in 0..(length-1):
     result = (result xor actualInput[i]) * FnvPrime64
 
 {.pop.}
