@@ -138,19 +138,23 @@ proc SipHash24*(input: pointer; length: int): uint64 =
   return SipHash24(input, length, key)
 
 proc SipHash24*(input: string): uint64 {.inline.} =
-  var data = input
+  var data: string = input
+  shallowCopy(data, input)
   return SipHash24(addr(data[0]), data.len)
 
 proc SipHash24*(input: string; key: SipHash24Key): uint64 {.inline.} =
-  var data = input
+  var data: string = input
+  shallowCopy(data, input)
   return SipHash24(addr(data[0]), data.len, key)
 
 template DefHash(typ: typedesc): stmt =
   proc SipHash24*(input: typ): uint64 =
-    var data = input
+    var data: typ
+    shallowCopy(data, input)
     return SipHash24(addr(data), sizeof(typ))
   proc SipHash24*(input: typ; key: SipHash24Key): uint64 =
-    var data = input
+    var data: typ
+    shallowCopy(data, input)
     return SipHash24(addr(data), sizeof(typ), key)
 
 DefHash(int)

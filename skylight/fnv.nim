@@ -117,19 +117,23 @@ proc Fnv1aHash64*(input: pointer; length: int): uint64 =
 # User Helpers {{{1
 
 proc Fnv1Hash32(input: string): uint32 =
-  var data = input
+  var data: string
+  shallowCopy(data, input)
   return Fnv1Hash32(addr(data[0]), data.len)
 
 proc Fnv1aHash32(input: string): uint32 =
-  var data = input
+  var data: string
+  shallowCopy(data, input)
   return Fnv1aHash32(addr(data[0]), data.len)
 
 proc Fnv1Hash64(input: string): uint64 =
-  var data = input
+  var data: string
+  shallowCopy(data, input)
   return Fnv1Hash64(addr(data[0]), data.len)
 
 proc Fnv1aHash64(input: string): uint64 =
-  var data = input
+  var data: string
+  shallowCopy(data, input)
   return Fnv1aHash64(addr(data[0]), data.len)
 
 template DefHash(typ: typedesc): stmt =
