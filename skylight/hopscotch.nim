@@ -33,25 +33,26 @@ proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
   # TODO: We should probably make the algorithm adjustable.
   let hash   = Siphash24(key)
   let bucket = int(hash mod uint64(self.Database.len))
-  if self.Database[bucket].Mask == 0:
-    self.Database[bucket].Mask     = (1 shl 31)
-    self.Database[bucket].LocalKey = key
-    self.Database[bucket].Value    = value
+  let da = addr(self.Database[bucket])
+  if da[].Mask == 0:
+    da.Mask     = (1 shl 31)
+    da.LocalKey = key
+    da.Value    = value
     inc(self.Elements)
     return true
   else:
     # We're adding a child to this element.
     for offset in 1..30:
       if bucket+offset < self.Database.len:
+        let db = addr(self.Database[bucket+offset])
         # TODO support shuffling items around (the hopscotch part)
         # check if a good place was found
-        if self.Database[bucket+offset].Mask == 0:
-          self.Database[bucket+offset].Mask     = (1 shl 31)
-          self.Database[bucket+offset].LocalKey = key
-          self.Database[bucket+offset].Value    = value
+        if db[].Mask == 0:
+          db[].Mask     = (1 shl 31)
+          db[].LocalKey = key
+          db[].Value    = value
           # now mark the parent with this knowledge
-          self.Database[bucket].Mask =
-            self.Database[bucket].Mask or (uint32(1) shl uint32(offset))
+          da[].Mask = da[].Mask or (uint32(1) shl uint32(offset))
           # we're good
           inc(self.Elements)
           return true
@@ -210,8 +211,6 @@ when isMainModule:
         debugEcho "Step ", i, " Load: ", table.LoadFactor
       check table.Len == i
       table[i] = i xor 7
-      for j in 0..i:
-        check table[j] == (j xor 7)
     # Retrieve loads of data
     checkpoint "verification run"
     for i in 0..65535:
