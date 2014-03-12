@@ -24,8 +24,8 @@ proc Reset [K,V](self: var HopscotchNode[K,V]) =
   zeroMem(addr(self), sizeof(HopscotchNode[K,V]))
 
 iterator HopOffsets(mask: uint32): int =
-  for x in 0..30:
-    let y = uint32(1 shl x)
+  for x in 1..31:
+    let y = uint32(uint32(1) shl uint32(x-1))
     if (mask and y) > 0'u32:
       yield x
 
@@ -46,7 +46,7 @@ proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
     return true
   else:
     # We're adding a child to this element.
-    for offset in 1..30:
+    for offset in 1..31:
       if bucket+offset < self.Database.len:
         let db = addr(self.Database[bucket+offset])
         # TODO support shuffling items around (the hopscotch part)
@@ -56,7 +56,7 @@ proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
           db[].LocalKey = key
           db[].Value    = value
           # now mark the parent with this knowledge
-          da[].Mask = da[].Mask or (uint32(1) shl uint32(offset))
+          da[].Mask = da[].Mask or (uint32(1) shl uint32(offset-1))
           # we're good
           inc(self.Elements)
           return true
@@ -143,16 +143,7 @@ proc Del* [K,V](self: var HopscotchTable[K,V]; key: K) =
     self.Database[bucket].Reset
     dec(self.Elements)
   else:
-    let firstOffset = self.Database[bucket].Mask.FirstHopOffset
-    let a = addr(self.Database[bucket])
-    let b = addr(self.Database[bucket+firstOffset])
-    # Move things over
-    shallowCopy(a[].LocalKey , b[].LocalKey)
-    shallowCopy(a[].Value    , b[].Value)
-    # De-mask the offset
-    b[].Mask = b[].Mask and (not (1'u32 shl uint32(firstOffset)))
-    # Clear the offset
-    self.Database[bucket+firstOffset].Reset
+    # TODO recursive buttstumps
 
 template Delete* [K,V](self: var HopscotchTable[K,V]; key: K) =
   Del(self, key)
