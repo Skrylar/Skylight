@@ -24,10 +24,10 @@ proc Reset [K,V](self: var HopscotchNode[K,V]) =
   zeroMem(addr(self), sizeof(HopscotchNode[K,V]))
 
 iterator HopOffsets(mask: uint32): int =
-  for x in 30..0:
+  for x in 0..30:
     let y = uint32(1 shl x)
     if (mask and y) > 0'u32:
-      yield (30-x)
+      yield x
 
 proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
   # TODO: We should probably make the algorithm adjustable.
@@ -41,9 +41,9 @@ proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
     return true
   else:
     # We're adding a child to this element.
-    for offset in 0..31:
+    for offset in 0..30:
       if bucket+offset < self.Database.len:
-        # TODO support bouncing people out of the neighborhood
+        # TODO support shuffling items around (the hopscotch part)
         # check if a good place was found
         if self.Database[bucket+offset].Mask == 0:
           self.Database[bucket+offset].Mask     = (1 shl 31)
@@ -85,7 +85,13 @@ proc TryGet* [K,V](self: var HopscotchTable[K,V]; key: K; outValue: var V): bool
       outValue = self.Database[bucket].Value
       return true
     else:
-      quit "TODO linear probe"
+      for x in self.Database[bucket].Mask.HopOffsets:
+        if bucket+x < self.Database.len:
+          if self.Database[bucket+x].LocalKey == key:
+            outValue = self.Database[bucket+x].Value
+            return true
+        else:
+          return false
 
 proc `[]`* [K,V](self: var HopscotchTable[K,V]; key: K): V =
   if not self.TryGet(key, result):
