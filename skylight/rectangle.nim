@@ -47,6 +47,14 @@ proc Difference*[T](self, other: Rectangle[T]): Rectangle[T] =
 
 # Adjustment {{{1
 
+proc Set*[T](self: var Rectangle[T]; lf, tp, bm, rg: T) =
+  ## Modifies the rectangle in-place, setting each element of the
+  ## rectangle in a single procedure call.
+  self.Left   = lf
+  self.Top    = tp
+  self.Bottom = bm
+  self.Right  = rg
+
 proc Inflate*[T](self, other: Rectangle[T]): Rectangle[T] =
   ## Return a rectangle where each edge has been pushed outward by the
   ## other rectangle. Beware that inverted rectangles are a possible
