@@ -6,6 +6,11 @@ import
 # Type definition {{{1
 
 type
+  HopscotchNode[K,V] = object
+    Mask     : uint32
+    LocalKey : K
+    Value    : V
+
   HopscotchTable*[K,V] = object
     MaximumSize*: int
 
@@ -14,7 +19,10 @@ type
 # Construction {{{1
 
 proc InitHopscotchTable*(self: var HopscotchTable) =
-  discard
+  self.MaximumSize = 0
+  self.Elements    = 0
+  self.Database    = @[]
+  self.Database.setLen(1024)
 
 # }}}
 
