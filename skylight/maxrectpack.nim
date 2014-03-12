@@ -16,6 +16,31 @@ type
 
 # Internal code {{{1
 
+proc FindBestRectangleIndex [T](self: MaxRectPacker[T];
+  width, height: int): int =
+    ## Uses a linear search to find the rectangle which would waste the
+    ## least amount of pixels if it were cut up to contain [w, h]
+    assert width  > 0
+    assert height > 0
+    # Set up our control values
+    let insertArea = width * height
+    var bestScore  = 0x0FFFFFFF
+    var here       = -1
+    result         = -1
+    # Now perform the scan for success
+    for x in items(self.freeGeometry):
+      inc(here)
+      if (x.width < width) or (x.height < height):
+        # element is ineligible for consideration
+        continue
+      else:
+        # consider the element; note that the scoring function is key in
+        # determining what the "best" rectangle is!
+        let score = x.Area - insertArea
+        if score < bestScore:
+          bestScore = score
+          result    = here
+
 # }}}
 
 # Public interface {{{1
