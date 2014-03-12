@@ -143,7 +143,28 @@ proc Del* [K,V](self: var HopscotchTable[K,V]; key: K) =
     self.Database[bucket].Reset
     dec(self.Elements)
   else:
-    # TODO recursive buttstumps
+    dec(self.Elements)
+    var ia = bucket
+    while true:
+      # retrive our current position
+      let a = addr self.Database[ia]
+      let o = a[].Mask.FirstHopOffset
+      assert o > 0
+      let ib = ia + o
+      let b = addr self.Database[ib]
+      # Copy data over
+      shallowCopy(a[].LocalKey, b[].LocalKey)
+      shallowCopy(a[].Value   , b[].Value)
+      # De-mask the area we just zorted
+      a[].Mask = a[].Mask xor uint32(uint32(1) shl uint32(o-1))
+      # Check if B was on its own
+      if b[].Mask == (1 shl 31):
+        # we're done
+        b[].Reset
+        return
+      else:
+        # Uh oh. Time to do things
+        ia = ib
 
 template Delete* [K,V](self: var HopscotchTable[K,V]; key: K) =
   Del(self, key)
@@ -207,6 +228,7 @@ when isMainModule:
 
   test "stress test":
     var table: HopscotchTable[int, int]
+    var output: int
     InitHopscotchTable(table)
     # Throw in loads of data
     checkpoint "initial pass"
@@ -226,5 +248,14 @@ when isMainModule:
         table.Del(i)
       else:
         check table[i] == (i xor 7)
+    # Delete more stuff
+    checkpoint "other half deletion run"
+    for i in 0..65535:
+      if (i mod 2) == 1:
+        table.Del(i)
+      else:
+        check table.TryGet(i, output) == false
+    # Check the soup
+    check table.len == 0
 # }}}
 
