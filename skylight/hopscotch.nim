@@ -29,6 +29,10 @@ iterator HopOffsets(mask: uint32): int =
     if (mask and y) > 0'u32:
       yield x
 
+proc FirstHopOffset(mask: uint32): int =
+  for x in mask.HopOffsets():
+    return x
+
 proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
   # TODO: We should probably make the algorithm adjustable.
   let hash   = Siphash24(key)
@@ -139,7 +143,16 @@ proc Del* [K,V](self: var HopscotchTable[K,V]; key: K) =
     self.Database[bucket].Reset
     dec(self.Elements)
   else:
-    quit "TODO linear deletion probe"
+    let firstOffset = self.Database[bucket].Mask.FirstHopOffset
+    let a = addr(self.Database[bucket])
+    let b = addr(self.Database[bucket+firstOffset])
+    # Move things over
+    shallowCopy(a[].LocalKey , b[].LocalKey)
+    shallowCopy(a[].Value    , b[].Value)
+    # De-mask the offset
+    b[].Mask = b[].Mask and (not (1'u32 shl uint32(firstOffset)))
+    # Clear the offset
+    self.Database[bucket+firstOffset].Reset
 
 template Delete* [K,V](self: var HopscotchTable[K,V]; key: K) =
   Del(self, key)
@@ -207,8 +220,8 @@ when isMainModule:
     # Throw in loads of data
     checkpoint "initial pass"
     for i in 0..65535:
-      if (i mod 128) == 0:
-        debugEcho "Step ", i, " Load: ", table.LoadFactor
+      var poop: int
+      check table.TryGet(i, poop) == false
       check table.Len == i
       table[i] = i xor 7
     # Retrieve loads of data
@@ -216,9 +229,11 @@ when isMainModule:
     for i in 0..65535:
       check table[i] == (i xor 7)
     # Delete loads of data the stupid way
-    checkpoint "deletion run"
+    checkpoint "half deletion run"
     for i in 0..65535:
-      table.Del(i)
-
+      if (i mod 2) == 0:
+        table.Del(i)
+      else:
+        check table[i] == (i xor 7)
 # }}}
 
