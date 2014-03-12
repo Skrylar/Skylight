@@ -41,7 +41,7 @@ proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
     return true
   else:
     # We're adding a child to this element.
-    for offset in 0..30:
+    for offset in 1..30:
       if bucket+offset < self.Database.len:
         # TODO support shuffling items around (the hopscotch part)
         # check if a good place was found
@@ -58,6 +58,31 @@ proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
       else:
         return false
   return false
+
+proc Grow [K,V](self: var HopscotchTable[K,V]) =
+  let doubled = self.Database.len * 2
+  let newSize = if self.MaximumSize > 0:
+      min(self.MaximumSize, doubled)
+    else:
+      doubled
+  if newSize != self.Database.len:
+    # switch around to a new database
+    var oldDatabase = self.Database
+    var newDatabase: seq[HopscotchNode[K,V]] = @[]
+    newDatabase.setLen(newSize)
+    self.Database = newDatabase
+    let z = self.Elements
+    # shove everything in to the new area
+    for i in 0..high(oldDatabase):
+      if oldDatabase[i].Mask != 0:
+        if not self.DoInsert(oldDatabase[i].LocalKey, oldDatabase[i].Value):
+          self.Database = oldDatabase
+          raise newException(EResourceExhausted,
+            "Could not rehash contents during table growth.")
+    self.Elements = z
+  else:
+    raise newException(EResourceExhausted,
+      "Could not grow hash table (restricted by policy)")
 
 # }}}
 
@@ -100,7 +125,7 @@ proc `[]`* [K,V](self: var HopscotchTable[K,V]; key: K): V =
 
 proc `[]=`* [K,V](self: var HopscotchTable[K,V]; key: K; value: V) =
   if not self.DoInsert(key, value):
-    # TODO: Grow and rehash
+    self.Grow
     if not self.DoInsert(key, value):
       raise newException(EResourceExhausted,
         "Cannot fit new element, even after rehashing.")
@@ -124,6 +149,9 @@ template Delete* [K,V](self: var HopscotchTable[K,V]; key: K) =
 
 proc Len* [K,V](self: var HopscotchTable[K,V]): int =
   return self.Elements
+
+proc LoadFactor* [K,V](self: var HopscotchTable[K,V]): int =
+  return int((float(self.Elements) / float(self.Database.len)) * 100)
 
 # }}}
 
@@ -178,6 +206,8 @@ when isMainModule:
     # Throw in loads of data
     checkpoint "initial pass"
     for i in 0..65535:
+      if (i mod 128) == 0:
+        debugEcho "Step ", i, " Load: ", table.LoadFactor
       check table.Len == i
       table[i] = i xor 7
       for j in 0..i:
