@@ -115,7 +115,7 @@ proc Intersects*[T](self, other: Rectangle[T]): bool =
   ## Checks if a given rectangle has at least a partial intersection
   ## with the second rectangle.
   return self.Contains(other.left, other.top) or
-    self.Contains(other.right, bottom)
+    self.Contains(other.right, other.bottom)
 
 # }}}
 
