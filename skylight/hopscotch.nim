@@ -12,7 +12,39 @@ type
     Value    : V
 
   HopscotchTable*[K,V] = object
-    MaximumSize*: int
+    MaximumSize* : int
+    Database     : seq[HopscotchNode[K,V]]
+    Elements     : int
+
+# }}}
+
+# Internal code {{{1
+
+proc DoInsert [K,V](self: var HopscotchTable[K,V]; key: K; value: V): bool =
+  # TODO: We should probably make the algorithm adjustable.
+  let hash   = Siphash24(key)
+  let bucket = int(hash mod uint64(self.Database.len))
+  if self.Database[bucket].Mask == 0:
+    self.Database[bucket].Mask     = (1 shl 31)
+    self.Database[bucket].LocalKey = key
+    self.Database[bucket].Value    = value
+    inc(self.Elements)
+    return true
+  else:
+    # We're adding a child to this element.
+    for offset in 0..31:
+      # check if a good place was found
+      if self.Database[bucket+offset].Mask == 0:
+        self.Database[bucket+offset].Mask     = (1 shl 31)
+        self.Database[bucket+offset].LocalKey = key
+        self.Database[bucket+offset].Value    = value
+        # now mark the parent with this knowledge
+        self.Database[bucket].Mask =
+          self.Database[bucket].Mask or (uint32(1) shl uint32(offset))
+        # we're good
+        inc(self.Elements)
+        return true
+  return false
 
 # }}}
 
@@ -32,10 +64,16 @@ proc TryGet* [K,V](self: var HopscotchTable[K,V]; key: K; outValue: V): bool =
   return false
 
 proc `[]`* [K,V](self: var HopscotchTable[K,V]; key: K): V =
-  discard
+  if not self.TryGet(key, result):
+    raise newException(EOutOfRange,
+      "Element not found in Hopscotch table.")
 
 proc `[]=`* [K,V](self: var HopscotchTable[K,V]; key: K; value: V) =
-  discard
+  if not self.DoInsert(key, value):
+    # TODO: Grow and rehash
+    if not self.DoInsert(key, value):
+      raise newException(EResourceExhausted,
+        "Cannot fit new element, even after rehashing.")
 
 proc Del* [K,V](self: var HopscotchTable[K,V]; key: K) =
   discard
