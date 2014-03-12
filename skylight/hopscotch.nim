@@ -1,4 +1,8 @@
 
+import
+  siphash,
+  unsigned
+
 # Type definition {{{1
 
 type
