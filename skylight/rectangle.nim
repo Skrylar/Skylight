@@ -55,6 +55,14 @@ proc Set*[T](self: var Rectangle[T]; lf, tp, bm, rg: T) =
   self.Bottom = bm
   self.Right  = rg
 
+proc Set*[T](self: var Rectangle[T]; other: Rectangle[T]) =
+  ## Modifies the rectangle in-place, setting each element of the
+  ## rectangle to the same elements stored in another rectangle.
+  self.Left   = other.Left
+  self.Top    = other.Top
+  self.Bottom = other.Bottom
+  self.Right  = other.Right
+
 proc Inflate*[T](self, other: Rectangle[T]): Rectangle[T] =
   ## Return a rectangle where each edge has been pushed outward by the
   ## other rectangle. Beware that inverted rectangles are a possible

@@ -41,6 +41,18 @@ proc FindBestRectangleIndex [T](self: MaxRectPacker[T];
           bestScore = score
           result    = here
 
+proc SplitRectangle[T] (self: Rectangle[T];
+  width, height: int;
+  outA, outB: var Rectangle[T]) =
+    ## Calculates two new rectangles, as though [width, height] had been
+    ## removed from 'self' and these new rectangles were the remaining
+    ## space on two dimensions.
+    outA.Set(self)
+    outB.Set(self)
+    # now apply the cuts
+    outA.Left   = self.Left + width
+    outB.Bottom = self.Top + height
+
 # }}}
 
 # Public interface {{{1
