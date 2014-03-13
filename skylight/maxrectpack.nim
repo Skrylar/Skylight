@@ -53,6 +53,21 @@ proc SplitRectangle[T] (self: Rectangle[T];
     outA.Left   = self.Left + width
     outB.Bottom = self.Top + height
 
+proc SplitRectangle[T] (self, other: Rectangle[T];
+  outA, outB, outC, outD: var Rectangle[T]) =
+    ## Calculates two new rectangles, as though [width, height] had been
+    ## removed from 'self' and these new rectangles were the remaining
+    ## space on two dimensions.
+    outA.Set(self)
+    outB.Set(self)
+    outC.Set(self)
+    outD.Set(self)
+    # now apply the cuts
+    outA.Left   = other.Right
+    outB.Top    = other.Bottom
+    outC.Right  = other.Left
+    outD.Bottom = other.Top
+
 # }}}
 
 # Public interface {{{1
