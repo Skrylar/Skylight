@@ -68,6 +68,13 @@ proc SplitRectangle[T] (self, other: Rectangle[T];
     outC.Right  = other.Left
     outD.Bottom = other.Top
 
+proc Add[T] (self: var MaxRectPacker[T]; element: Rectangle[T]) =
+  ## Adds a rectangle to the packer's free list, but only if the
+  ## rectangle is not malformed in some way.
+  if element.IsInverted : return
+  if element.Area < 0   : return
+  self.freeGeometry.Add(element)
+
 # }}}
 
 # Public interface {{{1
