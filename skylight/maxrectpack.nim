@@ -77,8 +77,20 @@ proc Buttstump[T] (self: var MaxRectPacker[T]; input : Rectangle[T]) =
     else:
       inc(i)
 
+# TODO extract this to a template
 proc Sort[T] (self: var MaxRectPacker[T]) =
-  discard # TODO sort rectangles by area
+  ## Performs an insertion sort on the free rectangle list.
+  var i : int = 0
+  while i < high(self.freeGeometry):
+    var j = i
+    var k = i + 1
+    while self.freeGeometry[j].Area < self.freeGeometry[k].Area:
+      swap(self.freeGeometry[j], self.freeGeometry[k])
+      if j > 0:
+        dec(j)
+        dec(k)
+      else:
+        break
 
 proc Trim[T] (self: var MaxRectPacker[T]) =
   discard # TODO remove rectangles that overlap larger ones
