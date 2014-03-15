@@ -41,18 +41,6 @@ proc FindBestRectangleIndex [T](self: MaxRectPacker[T];
           bestScore = score
           result    = here
 
-proc SplitRectangle[T] (self: Rectangle[T];
-  width, height: int;
-  outA, outB: var Rectangle[T]) =
-    ## Calculates two new rectangles, as though [width, height] had been
-    ## removed from 'self' and these new rectangles were the remaining
-    ## space on two dimensions.
-    outA.Set(self)
-    outB.Set(self)
-    # now apply the cuts
-    outA.Left   = self.Left + width
-    outB.Bottom = self.Top + height
-
 proc SplitRectangle[T] (self, other: Rectangle[T];
   outA, outB, outC, outD: var Rectangle[T]) =
     ## Calculates two new rectangles, as though [width, height] had been
@@ -75,6 +63,26 @@ proc Add[T] (self: var MaxRectPacker[T]; element: Rectangle[T]) =
   if element.Area < 0   : return
   self.freeGeometry.Add(element)
 
+proc Buttstump[T] (self: var MaxRectPacker[T]; input : Rectangle[T]) =
+  var i = 0
+  while i < len(self.freeGeometry):
+    if self.freeGeometry[i].Intersects(input):
+      var outA, outB, outC, outD: Rectangle[T]
+      self.freeGeometry[i].SplitRectangle(input, outA, outB, outC, outD)
+      self.freeGeometry.del(i)
+      self.Add(outA)
+      self.Add(outB)
+      self.Add(outC)
+      self.Add(outD)
+    else:
+      inc(i)
+
+proc Sort[T] (self: var MaxRectPacker[T]) =
+  discard # TODO sort rectangles by area
+
+proc Trim[T] (self: var MaxRectPacker[T]) =
+  discard # TODO remove rectangles that overlap larger ones
+
 # }}}
 
 # Public interface {{{1
@@ -85,7 +93,22 @@ method TryGet* [T](self: var MaxRectPacker[T];
     ## Attempts to retrieve a rectangle from the bin packer, splitting
     ## up free space from within the packer and returning it if
     ## possible.
-    return false
+    let index = self.FindBestRectangleIndex()
+    if index >= 0:
+      # make sure we return
+      outRectangle.Set(self.freeGeometry[index])
+      outRectangle.Right  = outRectangle.Left + Width
+      outRectangle.Bottom = outRectangle.Top + Height
+      # split occupied rectangle
+      self.Buttstump(index)
+      # sort everything
+      self.Sort
+      # trim rectangles to be maximal
+      self.Trim
+      return true
+    else:
+      # nothing we can do, really
+      return false
 
 method Reset* [T](self: var MaxRectPacker[T]) =
   ## Instructs the bin packer to reset its free space back to [0, 0,
