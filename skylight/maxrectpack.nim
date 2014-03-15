@@ -93,7 +93,15 @@ proc Sort[T] (self: var MaxRectPacker[T]) =
         break
 
 proc Trim[T] (self: var MaxRectPacker[T]) =
-  discard # TODO remove rectangles that overlap larger ones
+  var i : int = 0
+  while i < high(self.freeGeometry):
+    var j : int = i+1
+    while j < len(self.freeGeometry):
+      if self.freeGeometry[i].contains(self.freeGeometry[j]):
+        self.freeGeometry.del(j)
+      else
+        inc(j)
+    inc(i)
 
 # }}}
 
