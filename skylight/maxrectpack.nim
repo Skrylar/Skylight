@@ -147,6 +147,7 @@ proc Reset* [T](self: var MaxRectPacker[T]) =
 
 proc InitMaxRectPacker* [T](self: var MaxRectPacker[T];
   initialWidth, initialHeight: T) =
+    self.freeGeometry = @[]
     self.initialWidth  = initialWidth
     self.initialHeight = initialHeight
     reset(self)
