@@ -114,14 +114,14 @@ method TryGet* [T](self: var MaxRectPacker[T];
     ## Attempts to retrieve a rectangle from the bin packer, splitting
     ## up free space from within the packer and returning it if
     ## possible.
-    let index = self.FindBestRectangleIndex()
+    let index = self.FindBestRectangleIndex(width, height)
     if index >= 0:
       # make sure we return
       outRectangle.Set(self.freeGeometry[index])
       outRectangle.Right  = outRectangle.Left + Width
       outRectangle.Bottom = outRectangle.Top + Height
       # split occupied rectangle
-      self.Buttstump(index)
+      self.Buttstump(outRectangle)
       # sort everything
       self.Sort
       # trim rectangles to be maximal
