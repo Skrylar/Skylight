@@ -117,11 +117,13 @@ method TryGet* [T](self: var MaxRectPacker[T];
     let index = self.FindBestRectangleIndex(width, height)
     if index >= 0:
       # make sure we return
-      outRectangle.Set(self.freeGeometry[index])
-      outRectangle.Right  = outRectangle.Left + Width
-      outRectangle.Bottom = outRectangle.Top + Height
+      var rect : Rectangle[T]
+      rect.Set(self.freeGeometry[index])
+      rect.Right  = rect.Left + Width
+      rect.Bottom = rect.Top  + Height
+      outRectangle = rect
       # split occupied rectangle
-      self.Buttstump(outRectangle)
+      self.Buttstump(rect)
       # sort everything
       self.Sort
       # trim rectangles to be maximal
