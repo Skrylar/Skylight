@@ -47,6 +47,22 @@ proc Difference*[T](self, other: Rectangle[T]): Rectangle[T] =
 
 # Adjustment {{{1
 
+proc Set*[T](self: var Rectangle[T]; lf, tp, bm, rg: T) =
+  ## Modifies the rectangle in-place, setting each element of the
+  ## rectangle in a single procedure call.
+  self.Left   = lf
+  self.Top    = tp
+  self.Bottom = bm
+  self.Right  = rg
+
+proc Set*[T](self: var Rectangle[T]; other: Rectangle[T]) =
+  ## Modifies the rectangle in-place, setting each element of the
+  ## rectangle to the same elements stored in another rectangle.
+  self.Left   = other.Left
+  self.Top    = other.Top
+  self.Bottom = other.Bottom
+  self.Right  = other.Right
+
 proc Inflate*[T](self, other: Rectangle[T]): Rectangle[T] =
   ## Return a rectangle where each edge has been pushed outward by the
   ## other rectangle. Beware that inverted rectangles are a possible
@@ -115,7 +131,7 @@ proc Intersects*[T](self, other: Rectangle[T]): bool =
   ## Checks if a given rectangle has at least a partial intersection
   ## with the second rectangle.
   return self.Contains(other.left, other.top) or
-    self.Contains(other.right, bottom)
+    self.Contains(other.right, other.bottom)
 
 # }}}
 
