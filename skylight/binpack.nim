@@ -13,7 +13,7 @@ type
 
 method TryGet* [T](self: var BinPack2D[T];
   width, height: T;
-  outRectangle: Rectangle[T]): bool =
+  outRectangle: var Rectangle[T]): bool =
     ## Attempts to retrieve a rectangle from the bin packer, splitting
     ## up free space from within the packer and returning it if
     ## possible.
