@@ -98,8 +98,9 @@ proc Trim[T] (self: var MaxRectPacker[T]) =
     var j : int = i+1
     while j < len(self.freeGeometry):
       if self.freeGeometry[i].contains(self.freeGeometry[j]):
-        self.freeGeometry.del(j)
-      else
+        # use the slower delete so things don't get unsorted
+        self.freeGeometry.delete(j)
+      else:
         inc(j)
     inc(i)
 
