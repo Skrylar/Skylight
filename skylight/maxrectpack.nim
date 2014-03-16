@@ -108,7 +108,7 @@ proc Trim[T] (self: var MaxRectPacker[T]) =
 
 # Public interface {{{1
 
-method TryGet* [T](self: var MaxRectPacker[T];
+proc TryGet* [T](self: var MaxRectPacker[T];
   width, height: T;
   outRectangle: var Rectangle[T]): bool =
     ## Attempts to retrieve a rectangle from the bin packer, splitting
@@ -133,7 +133,7 @@ method TryGet* [T](self: var MaxRectPacker[T];
       # nothing we can do, really
       return false
 
-method Reset* [T](self: var MaxRectPacker[T]) =
+proc Reset* [T](self: var MaxRectPacker[T]) =
   ## Instructs the bin packer to reset its free space back to [0, 0,
   ## initialWidth, initialHeight]
   assert self.initialWidth  > 0
