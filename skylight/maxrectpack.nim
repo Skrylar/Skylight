@@ -145,8 +145,14 @@ method Reset* [T](self: var MaxRectPacker[T]) =
 
 # Constructors {{{1
 
-proc InitMaxRectPacker* [T](self: var MaxRectPacker[T]) =
-  reset(self)
+proc InitMaxRectPacker* [T](self: var MaxRectPacker[T];
+  initialWidth, initialHeight: T) =
+    self.initialWidth  = initialWidth
+    self.initialHeight = initialHeight
+    reset(self)
+
+# }}}
+
 
 # }}}
 
