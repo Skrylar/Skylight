@@ -153,6 +153,20 @@ proc InitMaxRectPacker* [T](self: var MaxRectPacker[T];
 
 # }}}
 
+# Unit testing {{{1
+
+when isMainModule:
+  import unittest
+  test "four-corner unpack":
+    var packer  : MaxRectPacker[int]
+    var outRect : Rectangle[int]
+    var packed = 0
+    InitMaxRectPacker(packer, 64, 64)
+    while packer.TryGet(32, 32, outRect):
+      inc(packed)
+      check outRect.width  == 32
+      check outRect.height == 32
+    check packed == 4
 
 # }}}
 
