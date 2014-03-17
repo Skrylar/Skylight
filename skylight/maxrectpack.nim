@@ -51,31 +51,32 @@ proc SplitRectangle[T] (self, other: Rectangle[T];
     outC.Set(self)
     outD.Set(self)
     # now apply the cuts
-    outA.Left   = other.Right
-    outB.Top    = other.Bottom
-    outC.Right  = other.Left
-    outD.Bottom = other.Top
+    outA.Right  = other.Left - 1
+    outB.Top    = other.Bottom + 1
+    outC.Left   = other.Right + 1
+    outD.Bottom = other.Top - 1
 
 proc Add[T] (self: var MaxRectPacker[T]; element: Rectangle[T]) =
   ## Adds a rectangle to the packer's free list, but only if the
   ## rectangle is not malformed in some way.
   if element.IsInverted : return
-  if element.Area < 0   : return
+  if element.Width  < 0 : return
+  if element.Height < 0 : return
   self.freeGeometry.Add(element)
 
 proc Buttstump[T] (self: var MaxRectPacker[T]; input : Rectangle[T]) =
   var i = 0
   while i < len(self.freeGeometry):
-    if self.freeGeometry[i].Intersects(input):
-      var outA, outB, outC, outD: Rectangle[T]
-      self.freeGeometry[i].SplitRectangle(input, outA, outB, outC, outD)
-      self.freeGeometry.del(i)
-      self.Add(outA)
-      self.Add(outB)
-      self.Add(outC)
-      self.Add(outD)
-    else:
-      inc(i)
+    while i < len(self.freeGeometry) and
+      self.freeGeometry[i].Intersects(input):
+        var outA, outB, outC, outD: Rectangle[T]
+        self.freeGeometry[i].SplitRectangle(input, outA, outB, outC, outD)
+        self.freeGeometry.del(i)
+        self.Add(outA)
+        self.Add(outB)
+        self.Add(outC)
+        self.Add(outD)
+    inc(i)
 
 # TODO extract this to a template
 proc Sort[T] (self: var MaxRectPacker[T]) =
@@ -91,6 +92,7 @@ proc Sort[T] (self: var MaxRectPacker[T]) =
         dec(k)
       else:
         break
+    inc(i)
 
 proc Trim[T] (self: var MaxRectPacker[T]) =
   var i : int = 0
@@ -119,8 +121,8 @@ proc TryGet* [T](self: var MaxRectPacker[T];
       # make sure we return
       var rect : Rectangle[T]
       rect.Set(self.freeGeometry[index])
-      rect.Right  = rect.Left + Width
-      rect.Bottom = rect.Top  + Height
+      rect.Right  = rect.Left + Width - 1
+      rect.Bottom = rect.Top  + Height - 1
       outRectangle = rect
       # split occupied rectangle
       self.Buttstump(rect)
