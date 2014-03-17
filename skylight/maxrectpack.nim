@@ -121,8 +121,8 @@ proc TryGet* [T](self: var MaxRectPacker[T];
       # make sure we return
       var rect : Rectangle[T]
       rect.Set(self.freeGeometry[index])
-      rect.Right  = rect.Left + Width
-      rect.Bottom = rect.Top  + Height
+      rect.Right  = rect.Left + Width - 1
+      rect.Bottom = rect.Top  + Height - 1
       outRectangle = rect
       # split occupied rectangle
       self.Buttstump(rect)
