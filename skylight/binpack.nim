@@ -1,6 +1,6 @@
 
 import
-  rectangle
+  rectangles
 
 # Type definitions {{{1
 

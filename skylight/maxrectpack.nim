@@ -4,7 +4,7 @@
 
 import
   binpack,
-  rectangle
+  rectangles
 
 # Type definitions {{{1
 
