@@ -51,10 +51,10 @@ proc SplitRectangle[T] (self, other: Rectangle[T];
     outC.Set(self)
     outD.Set(self)
     # now apply the cuts
-    outA.Left   = other.Right
-    outB.Top    = other.Bottom
-    outC.Right  = other.Left
-    outD.Bottom = other.Top
+    outA.Right  = other.Left - 1
+    outB.Top    = other.Bottom + 1
+    outC.Left   = other.Right + 1
+    outD.Bottom = other.Top - 1
 
 proc Add[T] (self: var MaxRectPacker[T]; element: Rectangle[T]) =
   ## Adds a rectangle to the packer's free list, but only if the
