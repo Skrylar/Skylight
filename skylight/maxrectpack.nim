@@ -60,22 +60,23 @@ proc Add[T] (self: var MaxRectPacker[T]; element: Rectangle[T]) =
   ## Adds a rectangle to the packer's free list, but only if the
   ## rectangle is not malformed in some way.
   if element.IsInverted : return
-  if element.Area < 0   : return
+  if element.Width  < 0 : return
+  if element.Height < 0 : return
   self.freeGeometry.Add(element)
 
 proc Buttstump[T] (self: var MaxRectPacker[T]; input : Rectangle[T]) =
   var i = 0
   while i < len(self.freeGeometry):
-    if self.freeGeometry[i].Intersects(input):
-      var outA, outB, outC, outD: Rectangle[T]
-      self.freeGeometry[i].SplitRectangle(input, outA, outB, outC, outD)
-      self.freeGeometry.del(i)
-      self.Add(outA)
-      self.Add(outB)
-      self.Add(outC)
-      self.Add(outD)
-    else:
-      inc(i)
+    while i < len(self.freeGeometry) and
+      self.freeGeometry[i].Intersects(input):
+        var outA, outB, outC, outD: Rectangle[T]
+        self.freeGeometry[i].SplitRectangle(input, outA, outB, outC, outD)
+        self.freeGeometry.del(i)
+        self.Add(outA)
+        self.Add(outB)
+        self.Add(outC)
+        self.Add(outD)
+    inc(i)
 
 # TODO extract this to a template
 proc Sort[T] (self: var MaxRectPacker[T]) =
