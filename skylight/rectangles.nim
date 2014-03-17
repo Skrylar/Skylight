@@ -16,11 +16,11 @@ type
 
 proc Width*[T](self: Rectangle[T]): T {.inline.} =
   ## Calculates the width of this rectangle.
-  result = self.Right - self.Left
+  result = 1 + self.Right - self.Left
 
 proc Height*[T](self: Rectangle[T]): T {.inline.} =
   ## Calculates the height of this rectangle.
-  result = self.Bottom - self.Top
+  result = 1 + self.Bottom - self.Top
 
 # }}}
 
@@ -114,26 +114,27 @@ proc Invert*[T](self: Rectangle[T]): Rectangle[T] =
 proc Contains*[T](self: Rectangle[T]; x, y: T): bool =
   ## Checks if a given [x, y] coordinate is contained by the source
   ## rectangle.
-  if x < self.left   : return false
-  if y < self.top    : return false
-  if x > self.right  : return false
-  if y > self.bottom : return false
+  if x < self.left  : return false
+  if y < self.top   : return false
+  if x >= self.right  : return false
+  if y >= self.bottom : return false
   return true
 
 proc Contains*[T](self, other: Rectangle[T]): bool =
   ## Checks if a given rectangle is wholly contained by the source
   ## rectangle.
-  if other.left < self.left     : return false
-  if other.right > self.right   : return false
-  if other.top < self.top       : return false
-  if other.bottom > self.bottom : return false
+  if other.left   <  self.left   : return false
+  if other.top    <  self.top    : return false
+  if other.right  >= self.right  : return false
+  if other.bottom >= self.bottom : return false
   return true
 
 proc Intersects*[T](self, other: Rectangle[T]): bool =
   ## Checks if a given rectangle has at least a partial intersection
   ## with the second rectangle.
-  return self.Contains(other.left, other.top) or
-    self.Contains(other.right, other.bottom)
+  if self.Contains(other.left, other.top): return true
+  if self.Contains(other.right, other.bottom): return true
+  return false
 
 # }}} impl
 
@@ -142,31 +143,39 @@ proc Intersects*[T](self, other: Rectangle[T]): bool =
 when isMainModule:
   proc IntersectionTest() =
     debugEcho "== INTERSECTION TEST =="
-    let big = Rectangle[int](left: 0,  top: 0,  right: 64, bottom: 64)
-    let a = Rectangle[int]  (left: 0,  top: 0,  right: 32, bottom: 32)
-    let b = Rectangle[int]  (left: 32, top: 0,  right: 64, bottom: 32)
-    let c = Rectangle[int]  (left: 32, top: 32, right: 64, bottom: 64)
-    let d = Rectangle[int]  (left: 0,  top: 32, right: 32, bottom: 64)
+    let big = Rectangle[int](left: 0,  top: 0,  right: 63, bottom: 63)
+    let a = Rectangle[int]  (left: 0,  top: 0,  right: 31, bottom: 31)
+    let b = Rectangle[int]  (left: 32, top: 0,  right: 63, bottom: 31)
+    let c = Rectangle[int]  (left: 32, top: 32, right: 63, bottom: 63)
+    let d = Rectangle[int]  (left: 0,  top: 32, right: 31, bottom: 63)
 
     doAssert big.intersects(a), "Big didn't intersect A"
+    doAssert a.width  == 32
+    doAssert a.height == 32
     doAssert a.intersects  (a), "A didn't intersect itself"
     doAssert b.intersects  (a) == false, "Intersection is incorrect."
     doAssert c.intersects  (a) == false, "Intersection is incorrect."
     doAssert d.intersects  (a) == false, "Intersection is incorrect."
 
     doAssert big.intersects(b), "Big didn't intersect B"
+    doAssert b.width  == 32
+    doAssert b.height == 32
     doAssert a.intersects  (b) == false, "Intersection is incorrect."
     doAssert b.intersects  (b), "B didn't intersect itself"
     doAssert c.intersects  (b) == false, "Intersection is incorrect."
     doAssert d.intersects  (b) == false, "Intersection is incorrect."
 
     doAssert big.intersects(c), "Big didn't intersect C"
+    doAssert c.width  == 32
+    doAssert c.height == 32
     doAssert a.intersects  (c) == false, "Intersection is incorrect."
     doAssert b.intersects  (c) == false, "Intersection is incorrect."
     doAssert c.intersects  (c), "C didn't intersect itself"
     doAssert d.intersects  (c) == false, "Intersection is incorrect."
 
     doAssert big.intersects(d), "Big didn't intersect D"
+    doAssert d.width  == 32
+    doAssert d.height == 32
     doAssert a.intersects  (d) == false, "Intersection is incorrect."
     doAssert b.intersects  (d) == false, "Intersection is incorrect."
     doAssert c.intersects  (d) == false, "Intersection is incorrect."
