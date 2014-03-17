@@ -109,6 +109,8 @@ proc Invert*[T](self: Rectangle[T]): Rectangle[T] =
 
 # Comparison {{{1
 
+# Implementation {{{2
+
 proc Contains*[T](self: Rectangle[T]; x, y: T): bool =
   ## Checks if a given [x, y] coordinate is contained by the source
   ## rectangle.
@@ -132,6 +134,47 @@ proc Intersects*[T](self, other: Rectangle[T]): bool =
   ## with the second rectangle.
   return self.Contains(other.left, other.top) or
     self.Contains(other.right, other.bottom)
+
+# }}} impl
+
+# Testing {{{2
+
+when isMainModule:
+  proc IntersectionTest() =
+    debugEcho "== INTERSECTION TEST =="
+    let big = Rectangle[int](left: 0,  top: 0,  right: 64, bottom: 64)
+    let a = Rectangle[int]  (left: 0,  top: 0,  right: 32, bottom: 32)
+    let b = Rectangle[int]  (left: 32, top: 0,  right: 64, bottom: 32)
+    let c = Rectangle[int]  (left: 32, top: 32, right: 64, bottom: 64)
+    let d = Rectangle[int]  (left: 0,  top: 32, right: 32, bottom: 64)
+
+    doAssert big.intersects(a), "Big didn't intersect A"
+    doAssert a.intersects  (a), "A didn't intersect itself"
+    doAssert b.intersects  (a) == false, "Intersection is incorrect."
+    doAssert c.intersects  (a) == false, "Intersection is incorrect."
+    doAssert d.intersects  (a) == false, "Intersection is incorrect."
+
+    doAssert big.intersects(b), "Big didn't intersect B"
+    doAssert a.intersects  (b) == false, "Intersection is incorrect."
+    doAssert b.intersects  (b), "B didn't intersect itself"
+    doAssert c.intersects  (b) == false, "Intersection is incorrect."
+    doAssert d.intersects  (b) == false, "Intersection is incorrect."
+
+    doAssert big.intersects(c), "Big didn't intersect C"
+    doAssert a.intersects  (c) == false, "Intersection is incorrect."
+    doAssert b.intersects  (c) == false, "Intersection is incorrect."
+    doAssert c.intersects  (c), "C didn't intersect itself"
+    doAssert d.intersects  (c) == false, "Intersection is incorrect."
+
+    doAssert big.intersects(d), "Big didn't intersect D"
+    doAssert a.intersects  (d) == false, "Intersection is incorrect."
+    doAssert b.intersects  (d) == false, "Intersection is incorrect."
+    doAssert c.intersects  (d) == false, "Intersection is incorrect."
+    doAssert d.intersects  (d), "D didn't intersect itself"
+
+  IntersectionTest()
+
+# }}} testing
 
 # }}}
 
