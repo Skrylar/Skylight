@@ -92,6 +92,7 @@ proc Sort[T] (self: var MaxRectPacker[T]) =
         dec(k)
       else:
         break
+    inc(i)
 
 proc Trim[T] (self: var MaxRectPacker[T]) =
   var i : int = 0
