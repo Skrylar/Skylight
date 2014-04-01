@@ -4,7 +4,8 @@
 
 import
   binpack,
-  rectangles
+  rectangles,
+  sorts
 
 # Type definitions {{{1
 
@@ -78,22 +79,6 @@ proc Buttstump[T] (self: var MaxRectPacker[T]; input : Rectangle[T]) =
         self.Add(outD)
     inc(i)
 
-# TODO extract this to a template
-proc Sort[T] (self: var MaxRectPacker[T]) =
-  ## Performs an insertion sort on the free rectangle list.
-  var i : int = 0
-  while i < high(self.freeGeometry):
-    var j = i
-    var k = i + 1
-    while self.freeGeometry[j].Area < self.freeGeometry[k].Area:
-      swap(self.freeGeometry[j], self.freeGeometry[k])
-      if j > 0:
-        dec(j)
-        dec(k)
-      else:
-        break
-    inc(i)
-
 proc Trim[T] (self: var MaxRectPacker[T]) =
   var i : int = 0
   while i < high(self.freeGeometry):
@@ -109,6 +94,9 @@ proc Trim[T] (self: var MaxRectPacker[T]) =
 # }}}
 
 # Public interface {{{1
+
+proc AreaCompare[T](a, b: Rectangle[T]): bool =
+  result = a.Area < b.Area
 
 proc TryGet* [T](self: var MaxRectPacker[T];
   width, height: T;
@@ -127,7 +115,7 @@ proc TryGet* [T](self: var MaxRectPacker[T];
       # split occupied rectangle
       self.Buttstump(rect)
       # sort everything
-      self.Sort
+      self.freeGeometry.InsertionSort AreaCompare[T]
       # trim rectangles to be maximal
       self.Trim
       return true
