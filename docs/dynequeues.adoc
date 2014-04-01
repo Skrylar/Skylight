@@ -1,0 +1,76 @@
+
+## Simple Usage
+
+.Sample event definitions.
+[source,nimrod]
+type
+  CommandEvent*   = object
+  BreakfastEvent* = object
+    eggs, pancakes: int
+
+.Marking sample event objects as events.
+[source,nimrod]
+MakeIntoEvent CommandEvent
+MakeIntoEvent BreakfastEvent
+
+.Preparing IDs for commands.
+[source,nimrod]
+type
+  ImportantCommands = enum
+    icRequestBreakfast
+
+.Transmitting events.
+[source,nimrod]
+----
+# Enqueue a command for breakfast
+myQueue.Enqueue icRequestBreakfast, x
+----
+
+.Binding events to procedures
+[source,nimrod]
+----
+proc HandleRequestForBreakfast(e: ptr Event[CommandEvent]) =
+  # Enqueue breakfast
+  var y = BreakfastEvent(eggs: 2, pancakses: 2)
+  myQueue.Enqueue y
+
+myQueue.On(CommandEvent, icRequestBreakfast, HandleRequestForBreakfast)
+----
+
+## Restrictions
+
+ * Events may not be larger than 16-machine words (denoted by
+   Nimrod's "int" type)
+ * Destructors do not work as expected for events; the var which is
+   enqueued may have its destructor ran after data is copied from it,
+   but the copied event will never have a destructor run.
+ * Despite a pointer being passed in to event handlers, a finalizer is
+   not run (this pointer is not actually allocated through the GC; it is
+   provided for efficiency reasons.)
+
+## Efficiency
+
+UIDs are assigned at compile-time using macros, and are retrieved
+through a static function. The optimizer should be able to remove this
+overhead completely.
+
+Events are triggered through a closure which adapts an event for use and
+calls a second closure; at least one of these levels should be removed
+by the optimizer (no guarantees.)
+
+Currently the binding table is checked via linear search, using a single
+machine `int` for comparison. If linear search proves to become a
+bottleneck for the event queue, an adapted version which supports
+looking up events via hash table (or consulting a static binding table)
+are potential future enhancements.
+
+## Garbage Collection
+
+Consider any pointers placed within an event to be a 'weak reference.'
+That is, the object may be collected if no references outside of the
+event queue exist.
+
+[NOTE]
+Consider this a present limitation of the current implementation. A fix
+so that strong references may be used is under consideration.
+
