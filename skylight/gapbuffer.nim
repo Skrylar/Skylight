@@ -10,7 +10,7 @@ type
     buffer: string
     startByte, endByte: int
     cursor: int
-    cursorDirty: bool # TODO find a way to merge this and save some space
+    cursorDirty: bool
 
 # }}}
 
