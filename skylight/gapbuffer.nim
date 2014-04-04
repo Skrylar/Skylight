@@ -16,7 +16,7 @@ type
 
 # Constructor {{{1
 
-proc InitGapBuffer*(self: var GapBuffer; initialLength: int = 0) =
+proc Init*(self: var GapBuffer; initialLength: int = 0) =
   self.buffer = newString(initialLength)
   let eof     = self.buffer.len
   # set up initial gap status
@@ -28,7 +28,7 @@ proc InitGapBuffer*(self: var GapBuffer; initialLength: int = 0) =
 
 proc NewGapBuffer*(initialLength: int): RGapBuffer =
   new(result)
-  InitGapBuffer(result[], initialLength)
+  Init(result[], initialLength)
 
 # }}}
 
@@ -265,7 +265,7 @@ when isMainModule:
   test "basic usage":
     var buffer: GapBuffer
     checkpoint "initialize"
-    InitGapBuffer(buffer, 32)
+    Init(buffer, 32)
     # put stuff in here
     checkpoint "first append"
     buffer.Add "snort"
@@ -288,7 +288,7 @@ when isMainModule:
 
   test "redaction":
     var buffer: GapBuffer
-    InitGapBuffer(buffer, 32)
+    Init(buffer, 32)
     buffer.Add "don't snort old bacon"
     check($buffer == "don't snort old bacon")
     # delete stuff
