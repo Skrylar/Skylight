@@ -93,7 +93,7 @@ proc Grow [K,V](self: var HopscotchTable[K,V]) =
 
 # Construction {{{1
 
-proc InitHopscotchTable* [K,V](self: var HopscotchTable[K,V]) =
+proc Init* [K,V](self: var HopscotchTable[K,V]) =
   self.MaximumSize = 0
   self.Elements    = 0
   self.Database    = @[]
@@ -105,28 +105,55 @@ proc InitHopscotchTable* [K,V](self: var HopscotchTable[K,V]) =
 
 # Element access {{{1
 
-proc TryGet* [K,V](self: var HopscotchTable[K,V]; key: K; outValue: var V): bool =
+proc TryGet* [K,V](self: var HopscotchTable[K,V];
+  key: K; outValue: var V): bool =
+    ## A safe way to retrieve values from the table. If the value is
+    ## found, true is returned and `outValue` receives the value at the
+    ## table location.
+    let hash   = Siphash24(key)
+    let bucket = int(hash mod uint64(self.Database.len))
+    if self.Database[bucket].Mask == 0:
+      return false
+    else:
+      if self.Database[bucket].LocalKey == key:
+        outValue = self.Database[bucket].Value
+        return true
+      else:
+        for x in self.Database[bucket].Mask.HopOffsets:
+          if bucket+x < self.Database.len:
+            if self.Database[bucket+x].LocalKey == key:
+              outValue = self.Database[bucket+x].Value
+              return true
+          else:
+            return false
+
+proc TryGetPtr* [K,V](self: var HopscotchTable[K,V]; key: K): ptr V =
+  ## A less-safe but more efficient version of TryGet, which returns a
+  ## pointer to the storage cell instead of a copy. Useful when
+  ## high-performance access to a large number of PODs is needed.
   let hash   = Siphash24(key)
   let bucket = int(hash mod uint64(self.Database.len))
   if self.Database[bucket].Mask == 0:
-    return false
+    return nil
   else:
     if self.Database[bucket].LocalKey == key:
-      outValue = self.Database[bucket].Value
-      return true
+      return addr(self.Database[bucket].Value)
     else:
       for x in self.Database[bucket].Mask.HopOffsets:
         if bucket+x < self.Database.len:
           if self.Database[bucket+x].LocalKey == key:
-            outValue = self.Database[bucket+x].Value
-            return true
+            return addr(self.Database[bucket+x].Value)
         else:
-          return false
+          return nil
 
 proc `[]`* [K,V](self: var HopscotchTable[K,V]; key: K): V =
   if not self.TryGet(key, result):
     raise newException(EOutOfRange,
       "Element not found in Hopscotch table.")
+
+# }}} access
+
+# Element assignment {{{1
 
 proc `[]=`* [K,V](self: var HopscotchTable[K,V]; key: K; value: V) =
   if not self.DoInsert(key, value):
@@ -134,6 +161,10 @@ proc `[]=`* [K,V](self: var HopscotchTable[K,V]; key: K; value: V) =
     if not self.DoInsert(key, value):
       raise newException(EResourceExhausted,
         "Cannot fit new element, even after rehashing.")
+
+# }}} assignment
+
+# Element destruction {{{1
 
 proc Del* [K,V](self: var HopscotchTable[K,V]; key: K) =
   let hash   = Siphash24(key)
@@ -189,7 +220,7 @@ when isMainModule:
     var table: HopscotchTable[string, int]
     var output: int
     var result: bool
-    InitHopscotchTable(table)
+    table.Init
     # Should start empty
     check table.len == 0
     # Should be a no-op
@@ -202,7 +233,7 @@ when isMainModule:
     var table: HopscotchTable[int, string]
     var output: string
     var result: bool
-    InitHopscotchTable(table)
+    table.Init
 
     checkpoint "start"
     check table.len == 0
@@ -229,12 +260,13 @@ when isMainModule:
   test "stress test":
     var table: HopscotchTable[int, int]
     var output: int
-    InitHopscotchTable(table)
+    table.Init
     # Throw in loads of data
     checkpoint "initial pass"
     for i in 0..65535:
       var poop: int
       check table.TryGet(i, poop) == false
+      check table.TryGetPtr(i) == nil
       check table.Len == i
       table[i] = i xor 7
     # Retrieve loads of data
