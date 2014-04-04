@@ -135,7 +135,7 @@ proc Reset* [T](self: var MaxRectPacker[T]) =
 
 # Constructors {{{1
 
-proc InitMaxRectPacker* [T](self: var MaxRectPacker[T];
+proc Init* [T](self: var MaxRectPacker[T];
   initialWidth, initialHeight: T) =
     self.freeGeometry = @[]
     self.initialWidth  = initialWidth
@@ -151,7 +151,7 @@ when isMainModule:
     var packer  : MaxRectPacker[int]
     var outRect : Rectangle[int]
     var packed = 0
-    InitMaxRectPacker(packer, 64, 64)
+    Init(packer, 64, 64)
     while packer.TryGet(32, 32, outRect):
       inc(packed)
       doAssert outRect.width  == 32
