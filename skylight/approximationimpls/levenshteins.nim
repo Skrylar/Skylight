@@ -10,7 +10,7 @@
 ## functions, and should only be used if necessary.
 ##
 ## You also may want to use strutils.editDistance.
-proc LevenshteinDistance(source, target: string): int =
+proc LevenshteinDistance*(source, target: string): int =
   # degenerate cases
   if source == target: return 0
   if source.high == target.low: return target.high

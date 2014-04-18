@@ -5,7 +5,7 @@
 ## strings are intended to be the same length. If both strings are *not*
 ## the same length, the shorter of two strings is compared and the
 ## difference in length is added as additional misses.
-proc HammingDistance(source, target: string): int =
+proc HammingDistance*(source, target: string): int =
   let h = min(source.high, target.high)
   let overflow = abs(source.high - target.high).int
   var miss = 0
