@@ -8,6 +8,8 @@
 ## substitutions and deletions which must be performed to transform
 ## `source` into `target`. Note that this is one of the slower distance
 ## functions, and should only be used if necessary.
+##
+## You also may want to use strutils.editDistance.
 proc LevenshteinDistance(source, target: string): int =
   # degenerate cases
   if source == target: return 0
